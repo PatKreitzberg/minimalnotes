@@ -1,11 +1,10 @@
-package com.wyldsoft.notes;
+package com.wyldsoft.notes.rendering;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.view.SurfaceView;
 
-import com.wyldsoft.notes.RendererUtils;
 import com.onyx.android.sdk.api.device.epd.EpdController;
 import com.onyx.android.sdk.api.device.epd.UpdateMode;
 import com.onyx.android.sdk.rx.RxRequest;

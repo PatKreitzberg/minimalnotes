@@ -6,7 +6,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 
-import com.wyldsoft.notes.RendererHelper;
+import com.wyldsoft.notes.rendering.RendererHelper;
 import com.onyx.android.sdk.data.note.TouchPoint;
 import com.onyx.android.sdk.pen.PenUtils;
 import com.onyx.android.sdk.pen.data.TouchPointList;

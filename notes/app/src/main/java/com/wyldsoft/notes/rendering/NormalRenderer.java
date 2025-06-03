@@ -1,13 +1,11 @@
-package com.wyldsoft.notes;
+package com.wyldsoft.notes.rendering;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.view.SurfaceView;
 
-import com.wyldsoft.notes.RendererHelper;
 import com.wyldsoft.notes.Shape;
-import com.wyldsoft.notes.RendererUtils;
 
 import java.util.List;
 

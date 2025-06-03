@@ -1,4 +1,4 @@
-package com.wyldsoft.notes
+package com.wyldsoft.notes.ui.components
 
 import android.graphics.Rect
 import androidx.compose.foundation.background
@@ -17,6 +17,9 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wyldsoft.notes.editor.EditorState
+import com.wyldsoft.notes.pen.PenProfile
+import com.wyldsoft.notes.pen.PenType
 import com.wyldsoft.notes.utils.noRippleClickable
 
 @Composable

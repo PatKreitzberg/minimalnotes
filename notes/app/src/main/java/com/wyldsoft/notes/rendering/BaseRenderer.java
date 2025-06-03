@@ -1,4 +1,4 @@
-package com.wyldsoft.notes;
+package com.wyldsoft.notes.rendering;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -8,7 +8,6 @@ import android.view.SurfaceView;
 
 import androidx.annotation.Nullable;
 
-import com.wyldsoft.notes.RendererHelper;
 import com.wyldsoft.notes.Shape;
 import com.onyx.android.sdk.api.device.epd.EpdController;
 import com.onyx.android.sdk.utils.BitmapUtils;

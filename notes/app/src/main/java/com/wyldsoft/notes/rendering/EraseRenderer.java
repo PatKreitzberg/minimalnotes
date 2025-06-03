@@ -1,6 +1,5 @@
-package com.wyldsoft.notes;
+package com.wyldsoft.notes.rendering;
 
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -9,12 +8,10 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.view.SurfaceView;
 
-import com.wyldsoft.notes.EraseArgs;
-import com.wyldsoft.notes.RendererHelper;
-import com.wyldsoft.notes.Shape;
-import com.wyldsoft.notes.RendererUtils;
 import com.onyx.android.sdk.data.note.TouchPoint;
 import com.onyx.android.sdk.pen.data.TouchPointList;
+import com.wyldsoft.notes.EraseArgs;
+import com.wyldsoft.notes.Shape;
 
 import java.util.Iterator;
 import java.util.List;

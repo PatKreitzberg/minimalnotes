@@ -4,10 +4,11 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.view.SurfaceView;
 
-import com.wyldsoft.notes.RendererHelper;
-import com.wyldsoft.notes.RendererUtils;
 import com.onyx.android.sdk.utils.CanvasUtils;
 import com.onyx.android.sdk.utils.RectUtils;
+import com.wyldsoft.notes.rendering.BaseRenderer;
+import com.wyldsoft.notes.rendering.RendererHelper;
+import com.wyldsoft.notes.rendering.RendererUtils;
 
 public class PartialRefreshRenderer extends BaseRenderer {
 

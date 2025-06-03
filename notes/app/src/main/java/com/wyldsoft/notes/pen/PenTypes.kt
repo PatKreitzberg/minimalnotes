@@ -1,6 +1,4 @@
-package com.wyldsoft.notes
-
-import androidx.compose.ui.graphics.Color
+package com.wyldsoft.notes.pen
 
 enum class PenType(val displayName: String) {
     BALLPEN("Ball Pen"),

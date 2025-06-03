@@ -1,4 +1,4 @@
-package com.wyldsoft.notes;
+package com.wyldsoft.notes.rendering;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -9,10 +9,7 @@ import android.view.SurfaceView;
 
 import com.wyldsoft.notes.EraseArgs;
 import com.wyldsoft.notes.InteractiveMode;
-import com.wyldsoft.notes.EraseRenderer;
-import com.wyldsoft.notes.NormalRenderer;
 import com.wyldsoft.notes.PartialRefreshRenderer;
-import com.wyldsoft.notes.Renderer;
 import com.wyldsoft.notes.Shape;
 import com.onyx.android.sdk.utils.BitmapUtils;
 

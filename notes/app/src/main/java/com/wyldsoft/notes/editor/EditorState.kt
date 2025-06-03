@@ -1,9 +1,11 @@
-package com.wyldsoft.notes
+package com.wyldsoft.notes.editor
 
 import android.graphics.Rect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.wyldsoft.notes.pen.PenProfile
+import com.wyldsoft.notes.base.BaseDrawingActivity
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 
@@ -24,9 +26,10 @@ class EditorState {
         val forceScreenRefresh = MutableSharedFlow<Unit>()
         val penProfileChanged = MutableSharedFlow<PenProfile>()
 
-        private var mainActivity: MainActivity? = null
+        // Updated to use base class instead of specific MainActivity
+        private var mainActivity: BaseDrawingActivity? = null
 
-        fun setMainActivity(activity: MainActivity) {
+        fun setMainActivity(activity: BaseDrawingActivity) {
             mainActivity = activity
         }
 
@@ -51,8 +54,7 @@ class EditorState {
         fun getCurrentExclusionRects(): List<Rect> {
             return mainActivity?.let { activity ->
                 // Get current exclusion rects from the activity's editor state
-                // This is a simplified approach - in practice you might want to maintain this centrally
-                emptyList<Rect>()
+                emptyList<Rect>() // Simplified for now
             } ?: emptyList()
         }
 
@@ -69,7 +71,6 @@ class EditorState {
             }
             mainActivity?.let { activity ->
                 activity.runOnUiThread {
-                    // Force UI refresh on main thread
                     kotlinx.coroutines.GlobalScope.launch {
                         refreshUi.emit(Unit)
                     }

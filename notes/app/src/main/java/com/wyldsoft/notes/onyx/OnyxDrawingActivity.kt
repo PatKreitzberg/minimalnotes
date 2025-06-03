@@ -93,6 +93,7 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
             val excludeRects = EditorState.getCurrentExclusionRects()
 
             helper.setStrokeWidth(currentPenProfile.strokeWidth)
+                .setStrokeColor(currentPenProfile.getColorAsInt())
                 .setLimitRect(limit, ArrayList(excludeRects))
                 .openRawDrawing()
 

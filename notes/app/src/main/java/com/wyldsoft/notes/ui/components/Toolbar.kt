@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wyldsoft.notes.editor.EditorState
-import com.wyldsoft.notes.editor.ExcludeRects
+import com.wyldsoft.notes.ExcludeRects
 import com.wyldsoft.notes.pen.PenProfile
 import com.wyldsoft.notes.pen.PenType
 import kotlinx.coroutines.delay

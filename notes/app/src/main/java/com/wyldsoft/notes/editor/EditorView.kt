@@ -1,15 +1,18 @@
 package com.wyldsoft.notes.editor
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 import com.wyldsoft.notes.DrawingCanvas
+import com.wyldsoft.notes.UpdatedToolbar
 import com.wyldsoft.notes.pen.PenProfile
-import com.wyldsoft.notes.ui.components.Toolbar
+import com.wyldsoft.notes.editor.EditorState
 
 @Composable
 fun EditorView(
@@ -25,13 +28,13 @@ fun EditorView(
     ) {
         // Title
         Text(
-            text = "Minimal Android Editor with Onyx SDK",
+            text = "Drawing App with Profile System",
             fontSize = 24.sp,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Toolbar with stroke options panel
-        Toolbar(
+        // Updated toolbar with 5 profiles
+        UpdatedToolbar(
             editorState = editorState,
             onPenProfileChanged = onPenProfileChanged
         )
@@ -80,11 +83,12 @@ fun EditorView(
                     color = Color.Black
                 )
                 Text(
-                    text = "1. Tap a pen button to open stroke options\n" +
-                            "2. Adjust stroke size and color - these now update the actual drawing!\n" +
-                            "3. Draw on the canvas with stylus (panel should close)\n" +
-                            "4. The stroke style, width, and color should match your selection\n" +
-                            "5. Watch debug info and logs for state coordination",
+                    text = "1. Select a profile (1-5) by tapping its icon\n" +
+                            "2. Tap the same profile again to open options panel\n" +
+                            "3. Change pen type, stroke size, and color within the profile\n" +
+                            "4. Draw on the canvas with stylus (panel should close)\n" +
+                            "5. Each profile remembers its own settings\n" +
+                            "6. Switch between profiles to use different pen configurations",
                     fontSize = 10.sp,
                     color = Color.Gray
                 )

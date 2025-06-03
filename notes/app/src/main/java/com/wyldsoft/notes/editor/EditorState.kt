@@ -4,14 +4,11 @@ import android.graphics.Rect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.wyldsoft.notes.pen.PenProfile
+import com.wyldsoft.notes.ExcludeRects
 import com.wyldsoft.notes.base.BaseDrawingActivity
+import com.wyldsoft.notes.pen.PenProfile
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
-
-enum class ExcludeRects {
-    StrokeOptions
-}
 
 class EditorState {
     var isDrawing by mutableStateOf(false)
@@ -26,7 +23,6 @@ class EditorState {
         val forceScreenRefresh = MutableSharedFlow<Unit>()
         val penProfileChanged = MutableSharedFlow<PenProfile>()
 
-        // Updated to use base class instead of specific MainActivity
         private var mainActivity: BaseDrawingActivity? = null
 
         fun setMainActivity(activity: BaseDrawingActivity) {
@@ -36,14 +32,14 @@ class EditorState {
         fun notifyDrawingStarted() {
             kotlinx.coroutines.GlobalScope.launch {
                 drawingStarted.emit(Unit)
-                isStrokeOptionsOpen.emit(false) // Close panel when drawing starts
+                isStrokeOptionsOpen.emit(false)
             }
         }
 
         fun notifyDrawingEnded() {
             kotlinx.coroutines.GlobalScope.launch {
                 drawingEnded.emit(Unit)
-                forceScreenRefresh.emit(Unit) // Force refresh when drawing ends
+                forceScreenRefresh.emit(Unit)
             }
         }
 
@@ -53,8 +49,7 @@ class EditorState {
 
         fun getCurrentExclusionRects(): List<Rect> {
             return mainActivity?.let { activity ->
-                // Get current exclusion rects from the activity's editor state
-                emptyList<Rect>() // Simplified for now
+                emptyList<Rect>()
             } ?: emptyList()
         }
 

@@ -5,48 +5,39 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Face
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wyldsoft.notes.editor.EditorState
 import com.wyldsoft.notes.ExcludeRects
-import com.wyldsoft.notes.pen.PenProfile
-import com.wyldsoft.notes.pen.PenType
+import com.wyldsoft.notes.PenIconUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+import com.wyldsoft.notes.editor.EditorState
+import com.wyldsoft.notes.pen.PenProfile
+
 
 @Composable
-fun Toolbar(
+fun UpdatedToolbar(
     editorState: EditorState,
     onPenProfileChanged: (PenProfile) -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
-    var selectedPen by remember { mutableStateOf(PenType.BALLPEN) }
+    var selectedProfileIndex by remember { mutableStateOf(0) } // Default to leftmost (index 0)
     var isStrokeSelectionOpen by remember { mutableStateOf(false) }
     var strokePanelRect by remember { mutableStateOf<Rect?>(null) }
 
-    // Store pen profiles for each pen type
-    var penProfiles by remember {
-        mutableStateOf(
-            PenType.values().associateWith { penType ->
-                PenProfile.getDefaultProfile(penType)
-            }
-        )
+    // Store 5 profiles
+    var profiles by remember {
+        mutableStateOf(PenProfile.createDefaultProfiles())
     }
 
-    // Current pen profile
-    val currentPenProfile = penProfiles[selectedPen] ?: PenProfile.getDefaultProfile(selectedPen)
+    // Current profile
+    val currentProfile = profiles[selectedProfileIndex]
 
     // Force refresh counter for debugging
     var refreshCounter by remember { mutableStateOf(0) }
@@ -65,10 +56,8 @@ fun Toolbar(
             editorState.stateExcludeRectsModified = true
             println("Added exclusion rect: $rect")
 
-            // Update touch surface with new exclusion zones
             val excludeRects = editorState.stateExcludeRects.values.toList()
             EditorState.updateExclusionZones(excludeRects)
-
             forceUIRefresh()
         }
     }
@@ -79,17 +68,14 @@ fun Toolbar(
         isStrokeSelectionOpen = false
         println("Removed exclusion rect")
 
-        // Update touch surface with cleared exclusion zones
         val excludeRects = editorState.stateExcludeRects.values.toList()
         EditorState.updateExclusionZones(excludeRects)
-
         forceUIRefresh()
     }
 
     fun openStrokeOptionsPanel() {
-        println("Opening stroke options panel")
+        println("Opening stroke options panel for profile $selectedProfileIndex")
         isStrokeSelectionOpen = true
-        // Delay adding exclusion rect until panel is positioned
         scope.launch {
             delay(50)
             addStrokeOptionPanelRect()
@@ -104,24 +90,35 @@ fun Toolbar(
         }
     }
 
-    fun handlePenClick(pen: PenType) {
-        if (selectedPen == pen && isStrokeSelectionOpen) {
-            // Same pen clicked - close panel
+    fun handleProfileClick(profileIndex: Int) {
+        if (selectedProfileIndex == profileIndex && isStrokeSelectionOpen) {
+            // Same profile clicked - close panel
             closeStrokeOptionsPanel()
-        } else if (selectedPen == pen && !isStrokeSelectionOpen) {
-            // Same pen clicked - open panel
+        } else if (selectedProfileIndex == profileIndex && !isStrokeSelectionOpen) {
+            // Same profile clicked - open panel
             openStrokeOptionsPanel()
         } else {
-            // Different pen - switch pen and update profile
+            // Different profile - switch profile and update
             if (isStrokeSelectionOpen) {
                 closeStrokeOptionsPanel()
             }
-            selectedPen = pen
-            // Immediately update the pen profile when switching pens
-            val newProfile = penProfiles[pen] ?: PenProfile.getDefaultProfile(pen)
+            selectedProfileIndex = profileIndex
+            val newProfile = profiles[profileIndex]
             onPenProfileChanged(newProfile)
             EditorState.updatePenProfile(newProfile)
         }
+    }
+
+    fun updateProfile(newProfile: PenProfile) {
+        val updatedProfiles = profiles.toMutableList()
+        updatedProfiles[selectedProfileIndex] = newProfile
+        profiles = updatedProfiles
+
+        // Immediately apply the new profile
+        onPenProfileChanged(newProfile)
+        EditorState.updatePenProfile(newProfile)
+
+        println("Profile $selectedProfileIndex updated: $newProfile")
     }
 
     // Listen for drawing events to close panel
@@ -169,108 +166,39 @@ fun Toolbar(
         }
     }
 
-    // Initialize with default pen profile
+    // Initialize with default profile
     LaunchedEffect(Unit) {
-        onPenProfileChanged(currentPenProfile)
-        EditorState.updatePenProfile(currentPenProfile)
+        onPenProfileChanged(currentProfile)
+        EditorState.updatePenProfile(currentProfile)
     }
 
     Column {
-        // Main toolbar
+        // Main toolbar - single row with 5 profile buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.White)
                 .border(1.dp, Color.Gray)
                 .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Tools:", color = Color.Black, fontSize = 12.sp)
+            Text("Profiles:", color = Color.Black, fontSize = 12.sp)
 
-            // Pen buttons - first row
-            ToolbarButton(
-                text = "Ball",
-                icon = Icons.Default.Create,
-                isSelected = selectedPen == PenType.BALLPEN,
-                penColor = penProfiles[PenType.BALLPEN]?.strokeColor,
-                onClick = { handlePenClick(PenType.BALLPEN) }
-            )
-
-            ToolbarButton(
-                text = "Fountain",
-                icon = Icons.Default.Create,
-                isSelected = selectedPen == PenType.FOUNTAIN,
-                penColor = penProfiles[PenType.FOUNTAIN]?.strokeColor,
-                onClick = { handlePenClick(PenType.FOUNTAIN) }
-            )
-
-            ToolbarButton(
-                text = "Marker",
-                icon = Icons.Default.Build,
-                isSelected = selectedPen == PenType.MARKER,
-                penColor = penProfiles[PenType.MARKER]?.strokeColor,
-                onClick = { handlePenClick(PenType.MARKER) }
-            )
-
-            ToolbarButton(
-                text = "Pencil",
-                icon = Icons.Default.Edit,
-                isSelected = selectedPen == PenType.PENCIL,
-                penColor = penProfiles[PenType.PENCIL]?.strokeColor,
-                onClick = { handlePenClick(PenType.PENCIL) }
-            )
-        }
-
-        // Second row of pen buttons
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White)
-                .border(1.dp, Color.Gray)
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("More:", color = Color.Black, fontSize = 12.sp)
-
-            ToolbarButton(
-                text = "Charcoal",
-                icon = Icons.Default.Face,
-                isSelected = selectedPen == PenType.CHARCOAL,
-                penColor = penProfiles[PenType.CHARCOAL]?.strokeColor,
-                onClick = { handlePenClick(PenType.CHARCOAL) }
-            )
-
-            ToolbarButton(
-                text = "Charcoal V2",
-                icon = Icons.Default.Face,
-                isSelected = selectedPen == PenType.CHARCOAL_V2,
-                penColor = penProfiles[PenType.CHARCOAL_V2]?.strokeColor,
-                onClick = { handlePenClick(PenType.CHARCOAL_V2) }
-            )
-
-            ToolbarButton(
-                text = "Neo Brush",
-                icon = Icons.Default.Build,
-                isSelected = selectedPen == PenType.NEO_BRUSH,
-                penColor = penProfiles[PenType.NEO_BRUSH]?.strokeColor,
-                onClick = { handlePenClick(PenType.NEO_BRUSH) }
-            )
-
-            ToolbarButton(
-                text = "Dash",
-                icon = Icons.Default.Create,
-                isSelected = selectedPen == PenType.DASH,
-                penColor = penProfiles[PenType.DASH]?.strokeColor,
-                onClick = { handlePenClick(PenType.DASH) }
-            )
+            // 5 Profile buttons
+            profiles.forEachIndexed { index, profile ->
+                ProfileButton(
+                    profile = profile,
+                    isSelected = selectedProfileIndex == index,
+                    onClick = { handleProfileClick(index) }
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
             // Debug info
             Text(
-                text = "Drawing: ${editorState.isDrawing} | Pen: ${selectedPen.displayName} | Refresh: $refreshCounter",
+                text = "Profile: ${selectedProfileIndex + 1} | ${currentProfile.penType.displayName} | Refresh: $refreshCounter",
                 color = Color.Gray,
                 fontSize = 10.sp
             )
@@ -281,19 +209,10 @@ fun Toolbar(
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                StrokeOptionsPanel(
-                    currentPen = selectedPen,
-                    currentProfile = currentPenProfile,
+                UpdatedStrokeOptionsPanel(
+                    currentProfile = currentProfile,
                     onProfileChanged = { newProfile ->
-                        val updatedProfiles = penProfiles.toMutableMap()
-                        updatedProfiles[selectedPen] = newProfile
-                        penProfiles = updatedProfiles
-
-                        // Immediately apply the new profile
-                        onPenProfileChanged(newProfile)
-                        EditorState.updatePenProfile(newProfile)
-
-                        println("Pen profile updated: $selectedPen -> $newProfile")
+                        updateProfile(newProfile)
                     },
                     onPanelPositioned = { rect ->
                         if (rect != strokePanelRect) {
@@ -310,31 +229,28 @@ fun Toolbar(
 }
 
 @Composable
-fun ToolbarButton(
-    text: String,
-    icon: ImageVector,
+fun ProfileButton(
+    profile: PenProfile,
     isSelected: Boolean,
-    penColor: Color?,
     onClick: () -> Unit
 ) {
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) (penColor ?: Color.Black) else Color.Transparent,
+            containerColor = if (isSelected) profile.strokeColor else Color.Transparent,
             contentColor = if (isSelected) Color.White else Color.Black
         ),
         border = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
             color = if (isSelected) Color.Black else Color.Gray
         ),
-        modifier = Modifier.height(36.dp)
+        modifier = Modifier.size(48.dp),
+        contentPadding = PaddingValues(4.dp)
     ) {
         Icon(
-            imageVector = icon,
-            contentDescription = text,
-            modifier = Modifier.size(14.dp)
+            imageVector = PenIconUtils.getIconForPenType(profile.penType),
+            contentDescription = PenIconUtils.getContentDescriptionForPenType(profile.penType),
+            modifier = Modifier.size(24.dp)
         )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(text, fontSize = 10.sp)
     }
 }

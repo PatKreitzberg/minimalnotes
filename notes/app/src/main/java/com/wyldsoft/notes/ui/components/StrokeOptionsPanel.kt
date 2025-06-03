@@ -1,9 +1,12 @@
 package com.wyldsoft.notes.ui.components
 
 import android.graphics.Rect
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -17,24 +20,29 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wyldsoft.notes.PenIconUtils
 import com.wyldsoft.notes.editor.EditorState
+import com.wyldsoft.notes.getColorName
+import com.wyldsoft.notes.getDefaultStrokeWidthForPenType
+import com.wyldsoft.notes.getMaxStrokeSizeForPenType
 import com.wyldsoft.notes.pen.PenProfile
 import com.wyldsoft.notes.pen.PenType
 import com.wyldsoft.notes.utils.noRippleClickable
 
+
 @Composable
-fun StrokeOptionsPanel(
-    currentPen: PenType,
+fun UpdatedStrokeOptionsPanel(
     currentProfile: PenProfile,
     onProfileChanged: (PenProfile) -> Unit,
     onPanelPositioned: (Rect) -> Unit = {}
 ) {
     var strokeSize by remember(currentProfile) { mutableStateOf(currentProfile.strokeWidth) }
     var selectedColor by remember(currentProfile) { mutableStateOf(currentProfile.strokeColor) }
+    var selectedPenType by remember(currentProfile) { mutableStateOf(currentProfile.penType) }
     val density = LocalDensity.current
 
     // Calculate the maximum stroke size based on pen type
-    val maxStrokeSize = when (currentPen) {
+    val maxStrokeSize = when (selectedPenType) {
         PenType.BALLPEN -> 20f
         PenType.FOUNTAIN -> 30f
         PenType.MARKER -> 60f
@@ -46,8 +54,12 @@ fun StrokeOptionsPanel(
     }
 
     // Apply settings immediately when they change
-    LaunchedEffect(strokeSize, selectedColor) {
-        val newProfile = PenProfile(strokeSize, currentPen, selectedColor)
+    LaunchedEffect(strokeSize, selectedColor, selectedPenType) {
+        val newProfile = currentProfile.copy(
+            strokeWidth = strokeSize,
+            strokeColor = selectedColor,
+            penType = selectedPenType
+        )
         onProfileChanged(newProfile)
         EditorState.refreshUi.emit(Unit)
     }
@@ -68,17 +80,17 @@ fun StrokeOptionsPanel(
                     with(density) { boundingRect.bottom.toDp().value.toInt() }
                 )
 
-                println("StrokeOptionsPanel positioned: $panelRect")
+                println("UpdatedStrokeOptionsPanel positioned: $panelRect")
                 onPanelPositioned(panelRect)
             }
     ) {
-        // Header with pen name and preview
+        // Header with profile info and preview
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(bottom = 16.dp)
         ) {
             Text(
-                text = "${currentPen.displayName} Options",
+                text = "Profile ${currentProfile.profileId + 1} Options",
                 fontSize = 18.sp,
                 modifier = Modifier.padding(end = 16.dp)
             )
@@ -93,8 +105,35 @@ fun StrokeOptionsPanel(
             )
         }
 
+        // Pen type selection
+        Text(text = "Pen Type:", fontSize = 14.sp, color = Color.Black)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(PenType.values()) { penType ->
+                PenTypeButton(
+                    penType = penType,
+                    isSelected = selectedPenType == penType,
+                    onSelect = {
+                        selectedPenType = penType
+                        // Adjust stroke size to default for new pen type if current size is outside reasonable range
+                        val newDefaultWidth = getDefaultStrokeWidthForPenType(penType)
+                        val newMaxSize = getMaxStrokeSizeForPenType(penType)
+                        if (strokeSize > newMaxSize || strokeSize < 1f) {
+                            strokeSize = newDefaultWidth
+                        }
+                    }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Stroke size slider
-        Text(text = "Stroke Size: ${strokeSize.toInt()}")
+        Text(text = "Stroke Size: ${strokeSize.toInt()}px", fontSize = 14.sp, color = Color.Black)
         Slider(
             value = strokeSize,
             onValueChange = { strokeSize = it },
@@ -107,7 +146,7 @@ fun StrokeOptionsPanel(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Color selection
-        Text(text = "Color:")
+        Text(text = "Color:", fontSize = 14.sp, color = Color.Black)
         Spacer(modifier = Modifier.height(8.dp))
 
         // Color grid
@@ -134,7 +173,7 @@ fun StrokeOptionsPanel(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Pen profile info
+        // Profile info card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
@@ -143,13 +182,18 @@ fun StrokeOptionsPanel(
                 modifier = Modifier.padding(12.dp)
             ) {
                 Text(
-                    text = "Current Profile",
+                    text = "Current Settings",
                     fontSize = 14.sp,
                     color = Color.Black
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Pen: ${currentPen.displayName}",
+                    text = "Profile: ${currentProfile.profileId + 1}",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "Pen: ${selectedPenType.displayName}",
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
@@ -159,17 +203,39 @@ fun StrokeOptionsPanel(
                     color = Color.Gray
                 )
                 Text(
-                    text = "Color: ${selectedColor}",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = "Style: ${currentProfile.getOnyxStrokeStyle()}",
+                    text = "Color: ${getColorName(selectedColor)}",
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
             }
         }
+    }
+}
+
+@Composable
+fun PenTypeButton(
+    penType: PenType,
+    isSelected: Boolean = false,
+    onSelect: () -> Unit
+) {
+    Button(
+        onClick = onSelect,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) Color.Black else Color.Transparent,
+            contentColor = if (isSelected) Color.White else Color.Black
+        ),
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) Color.Black else Color.Gray
+        ),
+        modifier = Modifier.size(40.dp),
+        contentPadding = PaddingValues(4.dp)
+    ) {
+        Icon(
+            imageVector = PenIconUtils.getIconForPenType(penType),
+            contentDescription = PenIconUtils.getContentDescriptionForPenType(penType),
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 

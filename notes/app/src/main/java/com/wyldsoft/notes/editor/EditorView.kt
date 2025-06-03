@@ -1,7 +1,6 @@
 package com.wyldsoft.notes.editor
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -10,9 +9,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import com.wyldsoft.notes.DrawingCanvas
-import com.wyldsoft.notes.UpdatedToolbar
+import com.wyldsoft.notes.ui.components.UpdatedToolbar
 import com.wyldsoft.notes.pen.PenProfile
-import com.wyldsoft.notes.editor.EditorState
 
 @Composable
 fun EditorView(

@@ -26,6 +26,7 @@ import com.onyx.android.sdk.rx.RxManager
 import com.wyldsoft.notes.GlobalDeviceReceiver
 import com.wyldsoft.notes.RendererToScreenRequest
 import com.wyldsoft.notes.TouchUtils
+import androidx.core.graphics.createBitmap
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
@@ -206,7 +207,7 @@ class MainActivity : ComponentActivity() {
     private fun cleanSurfaceView(surfaceView: SurfaceView): Boolean {
         val holder = surfaceView.holder ?: return false
         val canvas = holder.lockCanvas() ?: return false
-        canvas.drawColor(Color.RED)  // Changed to red for visibility
+        canvas.drawColor(Color.WHITE)
         holder.unlockCanvasAndPost(canvas)
         return true
     }
@@ -267,21 +268,16 @@ class MainActivity : ComponentActivity() {
     private fun drawScribbleToBitmap(points: List<TouchPoint>) {
         surfaceView?.let { sv ->
             if (bitmap == null) {
-                bitmap = Bitmap.createBitmap(
-                    sv.width,
-                    sv.height,
-                    Bitmap.Config.ARGB_8888
-                )
+                bitmap = createBitmap(sv.width, sv.height)
                 bitmapCanvas = Canvas(bitmap!!)
-                // Fill bitmap with red background for visibility
-                bitmapCanvas?.drawColor(Color.RED)
+                // Fill bitmap with white to make it seem empty
+                bitmapCanvas?.drawColor(Color.WHITE)
             }
 
-            // Use fountain pen style drawing with white paint for visibility on red background
             val drawPaint = Paint().apply {
                 isAntiAlias = true
                 style = Paint.Style.STROKE
-                color = Color.WHITE  // White strokes on red background
+                color = Color.BLACK
                 strokeWidth = STROKE_WIDTH
             }
 

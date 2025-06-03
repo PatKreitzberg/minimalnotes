@@ -1,6 +1,5 @@
 package com.wyldsoft.notes
 
-
 import androidx.compose.ui.graphics.Color
 
 enum class PenType(val displayName: String) {

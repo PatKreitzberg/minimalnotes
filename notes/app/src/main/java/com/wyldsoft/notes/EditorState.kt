@@ -22,6 +22,7 @@ class EditorState {
         val drawingStarted = MutableSharedFlow<Unit>()
         val drawingEnded = MutableSharedFlow<Unit>()
         val forceScreenRefresh = MutableSharedFlow<Unit>()
+        val penProfileChanged = MutableSharedFlow<PenProfile>()
 
         private var mainActivity: MainActivity? = null
 
@@ -45,6 +46,21 @@ class EditorState {
 
         fun updateExclusionZones(excludeRects: List<Rect>) {
             mainActivity?.updateExclusionZones(excludeRects)
+        }
+
+        fun getCurrentExclusionRects(): List<Rect> {
+            return mainActivity?.let { activity ->
+                // Get current exclusion rects from the activity's editor state
+                // This is a simplified approach - in practice you might want to maintain this centrally
+                emptyList<Rect>()
+            } ?: emptyList()
+        }
+
+        fun updatePenProfile(penProfile: PenProfile) {
+            kotlinx.coroutines.GlobalScope.launch {
+                penProfileChanged.emit(penProfile)
+            }
+            mainActivity?.updatePenProfile(penProfile)
         }
 
         fun forceRefresh() {

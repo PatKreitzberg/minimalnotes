@@ -34,13 +34,14 @@ class MainActivity : ComponentActivity() {
     private var deviceReceiver = GlobalDeviceReceiver()
     private var rxManager: RxManager? = null
     private var touchHelper: TouchHelper? = null
-    private val paint = Paint()
+    private var paint = Paint()
     private var bitmap: Bitmap? = null
     private var bitmapCanvas: Canvas? = null
     private var surfaceView: SurfaceView? = null
     private var isDrawingInProgress = false
 
-    private val STROKE_WIDTH = 3.0f
+    // Current pen profile
+    private var currentPenProfile = PenProfile.getDefaultProfile(PenType.BALLPEN)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +60,9 @@ class MainActivity : ComponentActivity() {
                         onSurfaceViewCreated = { sv ->
                             surfaceView = sv
                             initTouchHelper(sv)
+                        },
+                        onPenProfileChanged = { penProfile ->
+                            updatePenProfile(penProfile)
                         }
                     )
                 }
@@ -103,8 +107,45 @@ class MainActivity : ComponentActivity() {
     private fun initPaint() {
         paint.isAntiAlias = true
         paint.style = Paint.Style.STROKE
-        paint.color = Color.BLACK
-        paint.strokeWidth = STROKE_WIDTH
+        updatePaintFromProfile()
+    }
+
+    private fun updatePaintFromProfile() {
+        paint.color = currentPenProfile.getColorAsInt()
+        paint.strokeWidth = currentPenProfile.strokeWidth
+        Log.d(TAG, "Updated paint: color=${currentPenProfile.strokeColor}, width=${currentPenProfile.strokeWidth}")
+    }
+
+    fun updatePenProfile(penProfile: PenProfile) {
+        Log.d(TAG, "Updating pen profile: $penProfile")
+        currentPenProfile = penProfile
+        updatePaintFromProfile()
+        updateTouchHelperWithProfile()
+    }
+
+    private fun updateTouchHelperWithProfile() {
+        touchHelper?.let { helper ->
+            helper.setRawDrawingEnabled(false)
+            helper.closeRawDrawing()
+
+            val limit = Rect()
+            surfaceView?.getLocalVisibleRect(limit)
+
+            // Get current exclusion zones
+            val excludeRects = EditorState.getCurrentExclusionRects()
+
+            helper.setStrokeWidth(currentPenProfile.strokeWidth)
+                .setLimitRect(limit, ArrayList(excludeRects))
+                .openRawDrawing()
+
+            // Apply the stroke style from pen profile
+            helper.setStrokeStyle(currentPenProfile.getOnyxStrokeStyle())
+
+            helper.setRawDrawingEnabled(true)
+            helper.setRawDrawingRenderEnabled(true)
+
+            Log.d(TAG, "TouchHelper updated with stroke style: ${currentPenProfile.getOnyxStrokeStyle()}")
+        }
     }
 
     private fun initTouchHelper(surfaceView: SurfaceView) {
@@ -139,24 +180,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun updateActiveSurface() {
-        touchHelper?.let { helper ->
-            helper.setRawDrawingEnabled(false)
-            helper.closeRawDrawing()
-
-            val limit = Rect()
-            surfaceView?.getLocalVisibleRect(limit)
-
-            // Set up exclusion zones (this will be updated by the panel)
-            val excludeRects = arrayListOf<Rect>()
-
-            helper.setStrokeWidth(STROKE_WIDTH)
-                .setLimitRect(limit, excludeRects)
-                .openRawDrawing()
-            helper.setStrokeStyle(TouchHelper.STROKE_STYLE_FOUNTAIN)
-
-            helper.setRawDrawingEnabled(true)
-            helper.setRawDrawingRenderEnabled(true)
-        }
+        updateTouchHelperWithProfile()
     }
 
     fun updateExclusionZones(excludeRects: List<Rect>) {
@@ -167,10 +191,10 @@ class MainActivity : ComponentActivity() {
             val limit = Rect()
             surfaceView?.getLocalVisibleRect(limit)
 
-            helper.setStrokeWidth(STROKE_WIDTH)
+            helper.setStrokeWidth(currentPenProfile.strokeWidth)
                 .setLimitRect(limit, ArrayList(excludeRects))
                 .openRawDrawing()
-            helper.setStrokeStyle(TouchHelper.STROKE_STYLE_FOUNTAIN)
+            helper.setStrokeStyle(currentPenProfile.getOnyxStrokeStyle())
 
             helper.setRawDrawingEnabled(true)
             helper.setRawDrawingRenderEnabled(true)
@@ -274,12 +298,17 @@ class MainActivity : ComponentActivity() {
                 bitmapCanvas?.drawColor(Color.WHITE)
             }
 
+            // Use current pen profile paint settings
             val drawPaint = Paint().apply {
                 isAntiAlias = true
                 style = Paint.Style.STROKE
-                color = Color.BLACK
-                strokeWidth = STROKE_WIDTH
+                color = currentPenProfile.getColorAsInt()
+                strokeWidth = currentPenProfile.strokeWidth
+                strokeCap = Paint.Cap.ROUND
+                strokeJoin = Paint.Join.ROUND
             }
+
+            println("PAINT: color ${drawPaint.color}")
 
             val path = Path()
             val prePoint = PointF(points[0].x, points[0].y)

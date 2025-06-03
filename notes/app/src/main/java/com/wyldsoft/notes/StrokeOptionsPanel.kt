@@ -22,12 +22,12 @@ import com.wyldsoft.notes.utils.noRippleClickable
 @Composable
 fun StrokeOptionsPanel(
     currentPen: PenType,
-    currentSetting: PenSetting,
-    onSettingChanged: (PenSetting) -> Unit,
+    currentProfile: PenProfile,
+    onProfileChanged: (PenProfile) -> Unit,
     onPanelPositioned: (Rect) -> Unit = {}
 ) {
-    var strokeSize by remember { mutableStateOf(currentSetting.strokeSize) }
-    var selectedColor by remember { mutableStateOf(currentSetting.color) }
+    var strokeSize by remember(currentProfile) { mutableStateOf(currentProfile.strokeWidth) }
+    var selectedColor by remember(currentProfile) { mutableStateOf(currentProfile.strokeColor) }
     val density = LocalDensity.current
 
     // Calculate the maximum stroke size based on pen type
@@ -35,11 +35,17 @@ fun StrokeOptionsPanel(
         PenType.BALLPEN -> 20f
         PenType.FOUNTAIN -> 30f
         PenType.MARKER -> 60f
+        PenType.PENCIL -> 15f
+        PenType.CHARCOAL -> 40f
+        PenType.CHARCOAL_V2 -> 40f
+        PenType.NEO_BRUSH -> 50f
+        PenType.DASH -> 25f
     }
 
     // Apply settings immediately when they change
     LaunchedEffect(strokeSize, selectedColor) {
-        onSettingChanged(PenSetting(strokeSize, selectedColor))
+        val newProfile = PenProfile(strokeSize, currentPen, selectedColor)
+        onProfileChanged(newProfile)
         EditorState.refreshUi.emit(Unit)
     }
 
@@ -122,6 +128,45 @@ fun StrokeOptionsPanel(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Pen profile info
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Text(
+                    text = "Current Profile",
+                    fontSize = 14.sp,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Pen: ${currentPen.displayName}",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "Stroke: ${strokeSize.toInt()}px",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "Color: ${selectedColor}",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "Style: ${currentProfile.getOnyxStrokeStyle()}",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+        }
     }
 }
 
@@ -145,4 +190,3 @@ fun ColorButton(
             )
     )
 }
-

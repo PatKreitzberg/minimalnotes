@@ -11,7 +11,8 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun EditorView(
-    onSurfaceViewCreated: (android.view.SurfaceView) -> Unit = {}
+    onSurfaceViewCreated: (android.view.SurfaceView) -> Unit = {},
+    onPenProfileChanged: (PenProfile) -> Unit = {}
 ) {
     val editorState = remember { EditorState() }
 
@@ -28,7 +29,10 @@ fun EditorView(
         )
 
         // Toolbar with stroke options panel
-        Toolbar(editorState = editorState)
+        Toolbar(
+            editorState = editorState,
+            onPenProfileChanged = onPenProfileChanged
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -75,9 +79,10 @@ fun EditorView(
                 )
                 Text(
                     text = "1. Tap a pen button to open stroke options\n" +
-                            "2. Adjust stroke size and color (not yet connected to Onyx SDK)\n" +
+                            "2. Adjust stroke size and color - these now update the actual drawing!\n" +
                             "3. Draw on the canvas with stylus (panel should close)\n" +
-                            "4. Watch debug info and logs for state coordination",
+                            "4. The stroke style, width, and color should match your selection\n" +
+                            "5. Watch debug info and logs for state coordination",
                     fontSize = 10.sp,
                     color = Color.Gray
                 )

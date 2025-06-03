@@ -1,4 +1,4 @@
-package com.wyldsoft.notes.rendering;
+package com.wyldsoft.notes.util;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -7,6 +7,8 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.view.SurfaceView;
+
+import com.wyldsoft.notes.render.RendererHelper;
 
 public class RendererUtils {
 

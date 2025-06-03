@@ -13,7 +13,7 @@ import com.onyx.android.sdk.pen.data.TouchPointList
 import com.onyx.android.sdk.rx.RxManager
 import com.wyldsoft.notes.editor.EditorState
 import com.wyldsoft.notes.GlobalDeviceReceiver
-import com.wyldsoft.notes.rendering.RendererToScreenRequest
+import com.wyldsoft.notes.render.RendererToScreenRequest
 import com.wyldsoft.notes.TouchUtils
 import com.wyldsoft.notes.base.BaseDeviceReceiver
 import com.wyldsoft.notes.base.BaseDrawingActivity

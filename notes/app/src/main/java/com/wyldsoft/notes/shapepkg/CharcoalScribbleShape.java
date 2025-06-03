@@ -1,7 +1,7 @@
-package com.wyldsoft.notes.shape;
+package com.wyldsoft.notes.shapepkg;
 
 import com.wyldsoft.notes.data.ShapeFactory;
-import com.wyldsoft.notes.helper.RendererHelper;
+import com.wyldsoft.notes.render.RendererHelper;
 import com.wyldsoft.notes.util.RendererUtils;
 import com.onyx.android.sdk.data.PenConstant;
 import com.onyx.android.sdk.data.note.ShapeCreateArgs;

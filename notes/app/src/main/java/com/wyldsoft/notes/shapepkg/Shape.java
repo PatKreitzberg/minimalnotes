@@ -1,4 +1,4 @@
-package com.wyldsoft.notes;
+package com.wyldsoft.notes.shapepkg;
 
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -6,7 +6,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 
-import com.wyldsoft.notes.rendering.RendererHelper;
+import com.wyldsoft.notes.render.RendererHelper;
 import com.onyx.android.sdk.data.note.TouchPoint;
 import com.onyx.android.sdk.pen.PenUtils;
 import com.onyx.android.sdk.pen.data.TouchPointList;

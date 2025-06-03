@@ -1,9 +1,9 @@
-package com.wyldsoft.notes.rendering;
+package com.wyldsoft.notes.render;
 
 import android.graphics.Bitmap;
 import android.view.SurfaceView;
 
-import com.wyldsoft.notes.Shape;
+import com.wyldsoft.notes.shapepkg.Shape;
 
 import java.util.List;
 

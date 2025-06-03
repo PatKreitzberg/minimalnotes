@@ -1,12 +1,13 @@
-package com.wyldsoft.notes.shape;
+package com.wyldsoft.notes.shapepkg;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
 
-import com.wyldsoft.notes.helper.RendererHelper;
 import com.onyx.android.sdk.data.note.TouchPoint;
+import com.wyldsoft.notes.render.RendererHelper;
+
 
 import java.util.List;
 

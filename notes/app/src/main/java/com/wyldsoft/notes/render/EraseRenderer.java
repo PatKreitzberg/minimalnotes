@@ -1,4 +1,4 @@
-package com.wyldsoft.notes.rendering;
+package com.wyldsoft.notes.render;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -11,7 +11,7 @@ import android.view.SurfaceView;
 import com.onyx.android.sdk.data.note.TouchPoint;
 import com.onyx.android.sdk.pen.data.TouchPointList;
 import com.wyldsoft.notes.EraseArgs;
-import com.wyldsoft.notes.Shape;
+import com.wyldsoft.notes.shapepkg.Shape;
 
 import java.util.Iterator;
 import java.util.List;

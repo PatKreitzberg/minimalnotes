@@ -1,11 +1,11 @@
-package com.wyldsoft.notes.shape;
+package com.wyldsoft.notes.shapepkg;
 
-import com.wyldsoft.notes.helper.RendererHelper;
 import com.onyx.android.sdk.api.device.epd.EpdController;
 import com.onyx.android.sdk.data.note.TouchPoint;
 import com.onyx.android.sdk.pen.NeoFountainPen;
 import com.onyx.android.sdk.pen.PenUtils;
 import com.onyx.android.sdk.utils.NumberUtils;
+import com.wyldsoft.notes.render.RendererHelper;
 
 import java.util.List;
 

@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wyldsoft.notes.ExcludeRects
 import com.wyldsoft.notes.PenIconUtils
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 import com.wyldsoft.notes.editor.EditorState
@@ -31,6 +30,12 @@ fun UpdatedToolbar(
     var selectedProfileIndex by remember { mutableStateOf(0) } // Default to leftmost (index 0)
     var isStrokeSelectionOpen by remember { mutableStateOf(false) }
     var strokePanelRect by remember { mutableStateOf<Rect?>(null) }
+
+    // Add a flag to track if we're waiting for panel to close
+    var isPanelClosing by remember { mutableStateOf(false) }
+
+    // Add a callback for when panel is fully removed
+    var onPanelRemoved: (() -> Unit)? by remember { mutableStateOf(null) }
 
     // Store 5 profiles
     var profiles by remember {
@@ -66,29 +71,37 @@ fun UpdatedToolbar(
     fun removeStrokeOptionPanelRect() {
         editorState.stateExcludeRects.remove(ExcludeRects.StrokeOptions)
         editorState.stateExcludeRectsModified = true
-        isStrokeSelectionOpen = false
         println("Removed exclusion rect")
 
         val excludeRects = editorState.stateExcludeRects.values.toList()
         EditorState.updateExclusionZones(excludeRects)
-        forceUIRefresh()
     }
 
     fun openStrokeOptionsPanel() {
         println("Opening stroke options panel for profile $selectedProfileIndex")
         isStrokeSelectionOpen = true
-        scope.launch {
-            delay(50)
-            addStrokeOptionPanelRect()
-        }
+        isPanelClosing = false
+        onPanelRemoved = null
     }
 
     fun closeStrokeOptionsPanel() {
         println("Closing stroke options panel")
-        removeStrokeOptionPanelRect()
-        scope.launch {
-            EditorState.isStrokeOptionsOpen.emit(false)
+        isPanelClosing = true
+
+        // Set up the callback for after panel is removed
+        onPanelRemoved = {
+            removeStrokeOptionPanelRect()
+            forceUIRefresh()
+            scope.launch {
+                println("REFRESH: onPanelRemoved about to forceRefresh()")
+                EditorState.isStrokeOptionsOpen.emit(false)
+                EditorState.forceRefresh()
+            }
+            isPanelClosing = false
         }
+
+        // Trigger the panel removal
+        isStrokeSelectionOpen = false
     }
 
     fun handleProfileClick(profileIndex: Int) {
@@ -135,7 +148,7 @@ fun UpdatedToolbar(
 
         launch {
             EditorState.forceScreenRefresh.collect {
-                println("Force screen refresh requested")
+                println("REFRESH: Force screen refresh requested")
                 forceUIRefresh()
             }
         }
@@ -144,17 +157,15 @@ fun UpdatedToolbar(
     // Monitor drawing state changes
     LaunchedEffect(editorState.isDrawing) {
         if (editorState.isDrawing && isStrokeSelectionOpen) {
-            println("Drawing started - closing stroke options panel")
+            println("REFRESH: Drawing started - closing stroke options panel")
             closeStrokeOptionsPanel()
         }
     }
 
     // Emit stroke options state changes
     LaunchedEffect(isStrokeSelectionOpen) {
-        EditorState.isStrokeOptionsOpen.emit(isStrokeSelectionOpen)
-        if (!isStrokeSelectionOpen) {
-            editorState.stateExcludeRects.remove(ExcludeRects.StrokeOptions)
-            editorState.stateExcludeRectsModified = true
+        if (!isPanelClosing) {  // Only emit if not in the middle of closing
+            EditorState.isStrokeOptionsOpen.emit(isStrokeSelectionOpen)
         }
     }
 
@@ -163,7 +174,9 @@ fun UpdatedToolbar(
         if (editorState.stateExcludeRectsModified) {
             println("Exclusion rects modified - current zones: ${editorState.stateExcludeRects.keys}")
             editorState.stateExcludeRectsModified = false
-            forceUIRefresh()
+            if (!isPanelClosing) {  // Only refresh if not waiting for panel to close
+                forceUIRefresh()
+            }
         }
     }
 
@@ -205,11 +218,20 @@ fun UpdatedToolbar(
             )
         }
 
-        // Stroke options panel
+        // Stroke options panel with disposal detection
         if (isStrokeSelectionOpen) {
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
+                DisposableEffect(Unit) {
+                    onDispose {
+                        // This runs when the panel is actually removed from composition
+                        println("StrokeOptionsPanel removed from composition")
+                        onPanelRemoved?.invoke()
+                        onPanelRemoved = null
+                    }
+                }
+
                 UpdatedStrokeOptionsPanel(
                     currentProfile = currentProfile,
                     onProfileChanged = { newProfile ->
@@ -218,8 +240,10 @@ fun UpdatedToolbar(
                     onPanelPositioned = { rect ->
                         if (rect != strokePanelRect) {
                             strokePanelRect = rect
-                            if (isStrokeSelectionOpen) {
-                                addStrokeOptionPanelRect()
+                            if (isStrokeSelectionOpen && !isPanelClosing) {
+                                scope.launch {
+                                    addStrokeOptionPanelRect()
+                                }
                             }
                         }
                     }

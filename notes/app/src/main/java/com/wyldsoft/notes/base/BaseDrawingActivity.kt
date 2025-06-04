@@ -138,7 +138,8 @@ abstract class BaseDrawingActivity : ComponentActivity() {
 
     fun updateExclusionZones(excludeRects: List<Rect>) {
         updateTouchHelperExclusionZones(excludeRects)
-        forceScreenRefresh()
+        println("forceScreenRefresh() from updateExclusionZone")
+        //forceScreenRefresh()
     }
 
     protected open fun forceScreenRefresh() {

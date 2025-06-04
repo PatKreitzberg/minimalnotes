@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
 import android.graphics.Rect
+import android.util.Log
 import android.view.SurfaceView
 import com.onyx.android.sdk.data.note.TouchPoint
 import com.onyx.android.sdk.pen.TouchHelper
@@ -155,6 +156,7 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     }
 
     override fun forceScreenRefresh() {
+        Log.d("Onyx", "forceScreenRefresh() called")
         surfaceView?.let { sv ->
             cleanSurfaceView(sv)
             // Recreate bitmap from all stored shapes

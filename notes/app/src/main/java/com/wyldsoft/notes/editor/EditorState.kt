@@ -9,6 +9,7 @@ import com.wyldsoft.notes.base.BaseDrawingActivity
 import com.wyldsoft.notes.pen.PenProfile
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import android.util.Log
 
 class EditorState {
     var isDrawing by mutableStateOf(false)
@@ -61,6 +62,7 @@ class EditorState {
         }
 
         fun forceRefresh() {
+            Log.d("EditorState:", "forceRefresh()");
             kotlinx.coroutines.GlobalScope.launch {
                 forceScreenRefresh.emit(Unit)
             }

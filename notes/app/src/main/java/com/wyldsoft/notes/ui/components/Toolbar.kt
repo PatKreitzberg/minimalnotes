@@ -1,6 +1,7 @@
 package com.wyldsoft.notes.ui.components
 
 import android.graphics.Rect
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,7 +48,7 @@ fun UpdatedToolbar(
         scope.launch {
             EditorState.refreshUi.emit(Unit)
         }
-        println("UI Refresh triggered: $refreshCounter")
+        Log.d("Toolbar:", "UI Refresh triggered: $refreshCounter")
     }
 
     fun addStrokeOptionPanelRect() {

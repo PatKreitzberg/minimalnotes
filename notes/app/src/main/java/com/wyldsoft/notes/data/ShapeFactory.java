@@ -1,5 +1,7 @@
 package com.wyldsoft.notes.data;
 
+import android.util.Log;
+
 import com.wyldsoft.notes.shapepkg.BrushScribbleShape;
 import com.wyldsoft.notes.shapepkg.CharcoalScribbleShape;
 import com.wyldsoft.notes.shapepkg.MarkerScribbleShape;
@@ -69,6 +71,7 @@ public class ShapeFactory {
     }
 
     public static int getCharcoalPenType(int texture) {
+        Log.d("ShapeFactory", "getCharcoalPenType");
         if (texture == PenTexture.CHARCOAL_SHAPE_V2) {
             return NeoPenConfig.NEOPEN_PEN_TYPE_CHARCOAL_V2;
         }

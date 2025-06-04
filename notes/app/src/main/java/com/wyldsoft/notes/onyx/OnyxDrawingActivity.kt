@@ -1,6 +1,7 @@
 package com.wyldsoft.notes.onyx
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
@@ -14,19 +15,31 @@ import com.onyx.android.sdk.rx.RxManager
 import com.wyldsoft.notes.editor.EditorState
 import com.wyldsoft.notes.GlobalDeviceReceiver
 import com.wyldsoft.notes.render.RendererToScreenRequest
+import com.wyldsoft.notes.render.RendererHelper
 import com.wyldsoft.notes.TouchUtils
 import com.wyldsoft.notes.base.BaseDeviceReceiver
 import com.wyldsoft.notes.base.BaseDrawingActivity
 import com.wyldsoft.notes.base.BaseTouchHelper
+import com.wyldsoft.notes.data.ShapeFactory
+import com.wyldsoft.notes.shapepkg.Shape
+import com.wyldsoft.notes.pen.PenType
+import androidx.core.graphics.createBitmap
 
 open class OnyxDrawingActivity : BaseDrawingActivity() {
     private var rxManager: RxManager? = null
     private var onyxTouchHelper: TouchHelper? = null
     private var onyxDeviceReceiver: GlobalDeviceReceiver? = null
 
+    // Store all drawn shapes for re-rendering
+    private val drawnShapes = mutableListOf<Shape>()
+
+    // Renderer helper for shape rendering
+    private var rendererHelper: RendererHelper? = null
+
     override fun initializeSDK() {
         // Onyx-specific initialization
-        // Any Onyx SDK setup that needs to happen early
+        // Initialize renderer helper
+        rendererHelper = RendererHelper()
     }
 
     override fun createTouchHelper(surfaceView: SurfaceView): BaseTouchHelper {
@@ -76,6 +89,7 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
     override fun onCleanupSDK() {
         onyxTouchHelper?.closeRawDrawing()
+        drawnShapes.clear()
     }
 
     override fun updateActiveSurface() {
@@ -140,6 +154,15 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         onyxDeviceReceiver?.enable(this, false)
     }
 
+    override fun forceScreenRefresh() {
+        surfaceView?.let { sv ->
+            cleanSurfaceView(sv)
+            // Recreate bitmap from all stored shapes
+            recreateBitmapFromShapes()
+            bitmap?.let { renderToScreen(sv, it) }
+        }
+    }
+
     private fun getRxManager(): RxManager {
         if (rxManager == null) {
             rxManager = RxManager.Builder.sharedSingleThreadManager()
@@ -170,7 +193,7 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
                 if (!isDrawingInProgress) {
                     isDrawingInProgress = true
                 }
-                drawScribbleToBitmap(points)
+                drawScribbleToBitmap(points, touchPointList)
             }
         }
 
@@ -191,31 +214,103 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         }
     }
 
-    private fun drawScribbleToBitmap(points: List<TouchPoint>) {
+    private fun drawScribbleToBitmap(points: List<TouchPoint>, touchPointList: TouchPointList) {
         surfaceView?.let { sv ->
             createDrawingBitmap()
 
-            val drawPaint = Paint().apply {
+            // Create and store the shape based on current pen type
+            val shape = createShapeFromPenType(touchPointList)
+            drawnShapes.add(shape)
+
+            // Render the new shape to the bitmap
+            renderShapeToBitmap(shape)
+
+            renderToScreen(sv, bitmap)
+        }
+    }
+
+    private fun createShapeFromPenType(touchPointList: TouchPointList): Shape {
+        // Map pen type to shape type
+        val shapeType = when (currentPenProfile.penType) {
+            PenType.BALLPEN, PenType.PENCIL -> ShapeFactory.SHAPE_PENCIL_SCRIBBLE
+            PenType.FOUNTAIN -> ShapeFactory.SHAPE_BRUSH_SCRIBBLE
+            PenType.MARKER -> ShapeFactory.SHAPE_MARKER_SCRIBBLE
+            PenType.CHARCOAL, PenType.CHARCOAL_V2 -> ShapeFactory.SHAPE_CHARCOAL_SCRIBBLE
+            PenType.NEO_BRUSH -> ShapeFactory.SHAPE_NEO_BRUSH_SCRIBBLE
+            PenType.DASH -> ShapeFactory.SHAPE_PENCIL_SCRIBBLE // Default to pencil for dash
+        }
+
+        // Create the shape
+        val shape = ShapeFactory.createShape(shapeType)
+        shape.setTouchPointList(touchPointList)
+            .setStrokeColor(currentPenProfile.getColorAsInt())
+            .setStrokeWidth(currentPenProfile.strokeWidth)
+            .setShapeType(shapeType)
+
+        // Set texture for charcoal if needed
+        if (currentPenProfile.penType == PenType.CHARCOAL_V2) {
+            shape.setTexture(com.onyx.android.sdk.data.note.PenTexture.CHARCOAL_SHAPE_V2)
+        } else if (currentPenProfile.penType == PenType.CHARCOAL) {
+            shape.setTexture(com.onyx.android.sdk.data.note.PenTexture.CHARCOAL_SHAPE_V1)
+        }
+
+        return shape
+    }
+
+    private fun renderShapeToBitmap(shape: Shape) {
+        bitmap?.let { bmp ->
+            val renderContext = rendererHelper?.getRenderContext() ?: return
+            renderContext.bitmap = bmp
+            renderContext.canvas = Canvas(bmp)
+            renderContext.paint = Paint().apply {
                 isAntiAlias = true
                 style = Paint.Style.STROKE
-                color = currentPenProfile.getColorAsInt()
-                strokeWidth = currentPenProfile.strokeWidth
                 strokeCap = Paint.Cap.ROUND
                 strokeJoin = Paint.Join.ROUND
             }
+            // Initialize viewPoint for shapes that need it (like CharcoalScribbleShape)
+            renderContext.viewPoint = android.graphics.Point(0, 0)
 
-            val path = Path()
-            val prePoint = PointF(points[0].x, points[0].y)
-            path.moveTo(prePoint.x, prePoint.y)
+            shape.render(renderContext)
+        }
+    }
 
-            for (point in points) {
-                path.quadTo(prePoint.x, prePoint.y, point.x, point.y)
-                prePoint.x = point.x
-                prePoint.y = point.y
+    private fun recreateBitmapFromShapes() {
+        surfaceView?.let { sv ->
+            // Create a fresh bitmap
+            bitmap?.recycle()
+            bitmap = createBitmap(sv.width, sv.height)
+            bitmapCanvas = Canvas(bitmap!!)
+            bitmapCanvas?.drawColor(Color.WHITE)
+
+            // Get render context
+            val renderContext = rendererHelper?.getRenderContext() ?: return
+            renderContext.bitmap = bitmap
+            renderContext.canvas = bitmapCanvas!!
+            renderContext.paint = Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.STROKE
+                strokeCap = Paint.Cap.ROUND
+                strokeJoin = Paint.Join.ROUND
             }
+            // Initialize viewPoint for shapes that need it (like CharcoalScribbleShape)
+            renderContext.viewPoint = android.graphics.Point(0, 0)
 
-            bitmapCanvas?.drawPath(path, drawPaint)
-            renderToScreen(sv, bitmap)
+            // Render all shapes
+            for (shape in drawnShapes) {
+                shape.render(renderContext)
+            }
+        }
+    }
+
+    // Add method to clear all drawings
+    fun clearDrawing() {
+        drawnShapes.clear()
+        surfaceView?.let { sv ->
+            bitmap?.recycle()
+            bitmap = null
+            bitmapCanvas = null
+            cleanSurfaceView(sv)
         }
     }
 }

@@ -141,7 +141,7 @@ abstract class BaseDrawingActivity : ComponentActivity() {
         forceScreenRefresh()
     }
 
-    protected fun forceScreenRefresh() {
+    protected open fun forceScreenRefresh() {
         surfaceView?.let { sv ->
             cleanSurfaceView(sv)
             bitmap?.let { renderToScreen(sv, it) }

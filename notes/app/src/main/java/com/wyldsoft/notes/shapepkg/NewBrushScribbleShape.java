@@ -7,6 +7,7 @@ import com.onyx.android.sdk.pen.NeoBrushPen;
 import com.onyx.android.sdk.pen.PenUtils;
 
 import java.util.List;
+import android.util.Log;
 
 public class NewBrushScribbleShape extends Shape {
 
@@ -18,7 +19,6 @@ public class NewBrushScribbleShape extends Shape {
         List<TouchPoint> NeoBrushPoints = NeoBrushPen.computeStrokePoints(points,
                 strokeWidth, EpdController.getMaxTouchPressure());
         PenUtils.drawStrokeByPointSize(renderContext.canvas, renderContext.paint, NeoBrushPoints, isTransparent());
-
-
+        Log.d("Shape", "neoBrushPoints.size()" + NeoBrushPoints.size());
     }
 }

@@ -1,5 +1,7 @@
 package com.wyldsoft.notes.shapepkg;
 
+import android.util.Log;
+
 import com.onyx.android.sdk.api.device.epd.EpdController;
 import com.onyx.android.sdk.data.note.TouchPoint;
 import com.onyx.android.sdk.pen.NeoFountainPen;
@@ -18,6 +20,6 @@ public class BrushScribbleShape extends Shape {
         List<TouchPoint> brushPoints = NeoFountainPen.computeStrokePoints(points,
                 NumberUtils.FLOAT_ONE, strokeWidth, EpdController.getMaxTouchPressure());
         PenUtils.drawStrokeByPointSize(renderContext.canvas, renderContext.paint, brushPoints, isTransparent());
-
+        Log.d("Shape", "brushPoints" + brushPoints.size());
     }
 }

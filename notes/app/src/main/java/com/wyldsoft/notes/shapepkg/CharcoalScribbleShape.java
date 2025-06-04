@@ -1,5 +1,7 @@
 package com.wyldsoft.notes.shapepkg;
 
+import android.util.Log;
+
 import com.wyldsoft.notes.data.ShapeFactory;
 import com.wyldsoft.notes.render.RendererHelper;
 import com.wyldsoft.notes.util.RendererUtils;
@@ -15,9 +17,11 @@ public class CharcoalScribbleShape extends Shape {
 
     @Override
     public void render(RendererHelper.RenderContext renderContext) {
+        Log.d("Shape", "render");
         List<TouchPoint> points = touchPointList.getPoints();
         applyStrokeStyle(renderContext);
 
+        Log.d("Shape", "render 2");
         PenRenderArgs renderArgs = new PenRenderArgs()
                 .setCreateArgs(new ShapeCreateArgs())
                 .setCanvas(renderContext.canvas)
@@ -26,6 +30,8 @@ public class CharcoalScribbleShape extends Shape {
                 .setErase(isTransparent())
                 .setPaint(renderContext.paint)
                 .setScreenMatrix(RendererUtils.getPointMatrix(renderContext));
+
+        Log.d("Shape", "charcoal points" + points.size());
         if (strokeWidth <= PenConstant.CHARCOAL_SHAPE_DRAW_NORMAL_SCALE_WIDTH_THRESHOLD) {
             renderArgs.setStrokeWidth(strokeWidth)
                     .setPoints(points);

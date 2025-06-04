@@ -217,6 +217,7 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     }
 
     private fun drawScribbleToBitmap(points: List<TouchPoint>, touchPointList: TouchPointList) {
+        Log.d(TAG, "drawScribbleToBitmap called list size " + touchPointList.size())
         surfaceView?.let { sv ->
             createDrawingBitmap()
 
@@ -225,8 +226,8 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
             drawnShapes.add(shape)
 
             // Render the new shape to the bitmap
+            // fixme i dont think either of next to lines do anything necessary
             renderShapeToBitmap(shape)
-
             renderToScreen(sv, bitmap)
         }
     }

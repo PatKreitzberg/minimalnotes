@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
 import android.graphics.Rect
+import android.graphics.RectF
 import android.util.Log
 import android.view.SurfaceView
 import androidx.lifecycle.lifecycleScope
@@ -29,13 +30,14 @@ import com.wyldsoft.notes.database.DatabaseManager
 import com.wyldsoft.notes.database.ShapeUtils
 import com.wyldsoft.notes.database.entities.Note
 import com.wyldsoft.notes.utils.EraserUtils
+import com.wyldsoft.notes.utils.PartialRefreshEraserManager
 import kotlinx.coroutines.launch
 import androidx.core.graphics.createBitmap
 import com.onyx.android.sdk.api.device.epd.EpdController
 
 /**
  * Onyx-specific implementation of BaseDrawingActivity with full drawing and erasing support
- * Handles both stylus drawing/erasing and programmatic eraser mode
+ * Handles both stylus drawing/erasing and programmatic eraser mode with optimized partial refresh
  */
 open class OnyxDrawingActivity : BaseDrawingActivity() {
     private var rxManager: RxManager? = null
@@ -55,14 +57,24 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     // Add this property to track if we're loading from database
     private var isLoadingFromDatabase = false
 
-    // Erasing state
+    // Erasing state with partial refresh support
     private var isErasingInProgress = false
     private var eraserModeEnabled = false
-    private val shapesToErase = mutableSetOf<Shape>()
+    private var currentErasingSession = EraserUtils.ErasingSession()
+    private var eraserPath = mutableListOf<TouchPoint>()
+
+    // Partial refresh manager
+    private lateinit var partialRefreshManager: PartialRefreshEraserManager
 
     override fun initializeSDK() {
         // Onyx-specific initialization
         rendererHelper = RendererHelper()
+
+        // Initialize partial refresh manager
+        partialRefreshManager = PartialRefreshEraserManager(
+            getRxManager(),
+            rendererHelper!!
+        )
 
         // Initialize database
         databaseManager = DatabaseManager.getInstance(this)
@@ -307,26 +319,37 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     }
 
     /**
-     * Refresh the canvas immediately after erasing
-     * Uses efficient rendering for real-time erasing feedback
+     * Optimized refresh using partial refresh for erased areas
+     * Uses PartialRefreshEraserManager for efficient screen updates
      */
-    private fun refreshCanvasAfterErasing() {
+    private fun refreshCanvasAfterErasingOptimized() {
         surfaceView?.let { sv ->
-            // Recreate bitmap from remaining shapes
-            recreateBitmapFromShapes()
+            Log.d(TAG, "Starting optimized canvas refresh after erasing")
 
-            // Render to screen immediately
-            bitmap?.let { bmp ->
-                // Use direct rendering for faster response
-                getRxManager().enqueue(
-                    RendererToScreenRequest(sv, bmp), null
+            // Calculate refresh bounds from current erasing session
+            val refreshBounds = partialRefreshManager.calculateCombinedRefreshBounds(
+                currentErasingSession.erasedShapes,
+                eraserPath,
+                20f // Default eraser radius
+            )
+
+            if (!refreshBounds.isEmpty) {
+                // Perform partial refresh for the affected area
+                partialRefreshManager.performPartialRefresh(
+                    sv,
+                    refreshBounds,
+                    drawnShapes
                 )
+
+                Log.d(TAG, "Partial refresh completed for bounds: $refreshBounds")
+            } else {
+                Log.d(TAG, "No refresh bounds calculated, skipping refresh")
             }
         }
     }
 
     /**
-     * Force a complete screen refresh
+     * Force a complete screen refresh (fallback method)
      */
     override fun forceScreenRefresh() {
         Log.d(TAG, "forceScreenRefresh() called")
@@ -408,7 +431,16 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
             Log.d(TAG, "onBeginRawErasing called")
             isErasingInProgress = true
             disableFingerTouch()
-            shapesToErase.clear()
+
+            // Initialize new erasing session
+            currentErasingSession.clear()
+            eraserPath.clear()
+
+            // Add initial touch point to eraser path
+            touchPoint?.let { point ->
+                eraserPath.add(point)
+            }
+
             EditorState.notifyErasingStarted()
         }
 
@@ -417,25 +449,39 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
             isErasingInProgress = false
             enableFingerTouch()
 
-            // Update database - remove erased shapes
-            if (shapesToErase.isNotEmpty()) {
-                currentNote?.let { note ->
-                    saveErasedShapesToDatabase(note.id, shapesToErase.toList())
-                }
-
-                Log.d(TAG, "Finished erasing ${shapesToErase.size} shapes")
-                shapesToErase.clear()
+            // Add final touch point to eraser path
+            touchPoint?.let { point ->
+                eraserPath.add(point)
             }
 
-            // Final refresh to ensure consistency
+            // Update database - remove erased shapes
+            if (currentErasingSession.hasErasedShapes()) {
+                currentNote?.let { note ->
+                    saveErasedShapesToDatabase(note.id, currentErasingSession.erasedShapes.toList())
+                }
+
+                Log.d(TAG, "Finished erasing ${currentErasingSession.erasedShapes.size} shapes")
+            }
+
+            // IMPORTANT: Keep the EpdController.enablePost call as requested
             EpdController.enablePost(surfaceView, 1)
-            forceScreenRefresh()
+
+            // Use optimized partial refresh instead of full screen refresh
+            refreshCanvasAfterErasingOptimized()
+
+            // Clear erasing session data
+            currentErasingSession.clear()
+            eraserPath.clear()
+
             EditorState.notifyErasingEnded()
         }
 
         override fun onRawErasingTouchPointMoveReceived(touchPoint: TouchPoint?) {
             // Handle individual eraser point for real-time erasing feedback
             touchPoint?.let { point ->
+                // Add point to eraser path
+                eraserPath.add(point)
+
                 // Only find shapes that haven't been erased yet
                 val availableShapes = drawnShapes.toList() // Create snapshot
                 val newShapesToErase = EraserUtils.findShapesToEraseAtPoint(point, availableShapes)
@@ -443,10 +489,14 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
                 if (newShapesToErase.isNotEmpty()) {
                     // Remove the shapes immediately for real-time erasing
                     drawnShapes.removeAll(newShapesToErase)
-                    shapesToErase.addAll(newShapesToErase)
 
-                    // Immediately refresh the canvas to show the erasing effect
-                    refreshCanvasAfterErasing()
+                    // Add to erasing session
+                    newShapesToErase.forEach { shape ->
+                        currentErasingSession.addErasedShape(shape)
+                    }
+
+                    // Use optimized partial refresh for immediate feedback
+                    refreshCanvasAfterErasingOptimized()
 
                     Log.d(TAG, "Erased ${newShapesToErase.size} shapes at point move")
                 }
@@ -456,20 +506,27 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         override fun onRawErasingTouchPointListReceived(touchPointList: TouchPointList?) {
             Log.d(TAG, "onRawErasingTouchPointListReceived called with ${touchPointList?.size() ?: 0} points")
 
-            touchPointList?.let { eraserPath ->
+            touchPointList?.let { eraserPathList ->
+                // Add all points to eraser path
+                eraserPath.addAll(eraserPathList.points)
+
                 // Only find shapes that haven't been erased yet
                 val availableShapes = drawnShapes.toList() // Create snapshot
-                val newShapesToErase = EraserUtils.findShapesToErase(eraserPath, availableShapes)
+                val newShapesToErase = EraserUtils.findShapesToErase(eraserPathList, availableShapes)
 
                 if (newShapesToErase.isNotEmpty()) {
                     // Remove the shapes immediately for real-time erasing
                     drawnShapes.removeAll(newShapesToErase)
-                    shapesToErase.addAll(newShapesToErase)
 
-                    // Immediately refresh the canvas to show the erasing effect
-                    refreshCanvasAfterErasing()
+                    // Add to erasing session
+                    newShapesToErase.forEach { shape ->
+                        currentErasingSession.addErasedShape(shape)
+                    }
 
-                    Log.d(TAG, "Immediately erased ${newShapesToErase.size} shapes, total erased: ${shapesToErase.size}")
+                    // Use optimized partial refresh for immediate feedback
+                    refreshCanvasAfterErasingOptimized()
+
+                    Log.d(TAG, "Immediately erased ${newShapesToErase.size} shapes, total erased: ${currentErasingSession.erasedShapes.size}")
                 } else {
                     Log.d(TAG, "No new shapes to erase at this point")
                 }
@@ -636,4 +693,8 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
     // Method to check if currently in eraser mode
     fun isEraserModeEnabled(): Boolean = eraserModeEnabled
+
+    companion object {
+        private const val TAG = "OnyxDrawingActivity"
+    }
 }

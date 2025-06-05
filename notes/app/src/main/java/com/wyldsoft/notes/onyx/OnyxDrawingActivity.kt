@@ -31,6 +31,7 @@ import com.wyldsoft.notes.database.entities.Note
 import com.wyldsoft.notes.utils.EraserUtils
 import kotlinx.coroutines.launch
 import androidx.core.graphics.createBitmap
+import com.onyx.android.sdk.api.device.epd.EpdController
 
 /**
  * Onyx-specific implementation of BaseDrawingActivity with full drawing and erasing support
@@ -310,24 +311,13 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
      * Uses efficient rendering for real-time erasing feedback
      */
     private fun refreshCanvasAfterErasing() {
-
-        Log.d(TAG, "refreshCanvasAfterErasing")
-
-        surfaceView?.let { sv ->
-            bitmap?.recycle()
-            bitmap = null
-            bitmapCanvas = null
-            cleanSurfaceView(sv)
-        }
-
         surfaceView?.let { sv ->
             // Recreate bitmap from remaining shapes
             recreateBitmapFromShapes()
-            Log.d(TAG, "refreshing 1")
+
             // Render to screen immediately
             bitmap?.let { bmp ->
                 // Use direct rendering for faster response
-                Log.d(TAG, "refreshing 2")
                 getRxManager().enqueue(
                     RendererToScreenRequest(sv, bmp), null
                 )
@@ -340,7 +330,6 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
      */
     override fun forceScreenRefresh() {
         Log.d(TAG, "forceScreenRefresh() called")
-        bitmapCanvas?.drawColor(Color.WHITE)
         surfaceView?.let { sv ->
             cleanSurfaceView(sv)
             // Recreate bitmap from all stored shapes
@@ -439,6 +428,7 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
             }
 
             // Final refresh to ensure consistency
+            EpdController.enablePost(surfaceView, 1)
             forceScreenRefresh()
             EditorState.notifyErasingEnded()
         }

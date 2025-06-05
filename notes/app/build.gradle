@@ -191,6 +191,9 @@ dependencies {
     // For xopp file format
     implementation("org.apache.commons:commons-compress:1.27.1") // GZip support
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0"
+
+    // Add Gson for JSON serialization in Room converters
+    implementation 'com.google.code.gson:gson:2.10.1'
 }
 
 tasks.register('printVersionName') {

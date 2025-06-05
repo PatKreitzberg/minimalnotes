@@ -9,6 +9,7 @@ import android.graphics.PointF
 import android.graphics.Rect
 import android.util.Log
 import android.view.SurfaceView
+import androidx.lifecycle.lifecycleScope
 import com.onyx.android.sdk.data.note.TouchPoint
 import com.onyx.android.sdk.pen.TouchHelper
 import com.onyx.android.sdk.pen.data.TouchPointList
@@ -24,6 +25,10 @@ import com.wyldsoft.notes.base.BaseTouchHelper
 import com.wyldsoft.notes.data.ShapeFactory
 import com.wyldsoft.notes.shapepkg.Shape
 import com.wyldsoft.notes.pen.PenType
+import com.wyldsoft.notes.database.DatabaseManager
+import com.wyldsoft.notes.database.ShapeUtils
+import com.wyldsoft.notes.database.entities.Note
+import kotlinx.coroutines.launch
 import androidx.core.graphics.createBitmap
 
 open class OnyxDrawingActivity : BaseDrawingActivity() {
@@ -37,10 +42,68 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     // Renderer helper for shape rendering
     private var rendererHelper: RendererHelper? = null
 
+    // Database integration
+    private lateinit var databaseManager: DatabaseManager
+    private var currentNote: Note? = null
+
+    // Add this property to track if we're loading from database
+    private var isLoadingFromDatabase = false
+
     override fun initializeSDK() {
         // Onyx-specific initialization
-        // Initialize renderer helper
         rendererHelper = RendererHelper()
+
+        // Initialize database
+        databaseManager = DatabaseManager.getInstance(this)
+
+        // Load current note if available
+        loadCurrentNote()
+    }
+
+    private fun loadCurrentNote() {
+        // This will be called from the navigation system when opening a note
+        // For now, we'll create a default note for testing
+        currentNote?.let { note ->
+            loadShapesFromDatabase(note.id)
+        }
+    }
+
+    fun setCurrentNote(note: Note) {
+        currentNote = note
+        loadShapesFromDatabase(note.id)
+    }
+
+    private fun loadShapesFromDatabase(noteId: String) {
+        lifecycleScope.launch {
+            try {
+                isLoadingFromDatabase = true
+                val databaseShapes = databaseManager.repository.getShapesInNoteSync(noteId)
+
+                // Clear current shapes
+                drawnShapes.clear()
+
+                // Convert database shapes to drawing shapes
+                databaseShapes.forEach { dbShape ->
+                    val drawingShape = ShapeUtils.convertToDrawing(dbShape)
+                    drawnShapes.add(drawingShape)
+                }
+
+                // Recreate bitmap with loaded shapes
+                recreateBitmapFromShapes()
+
+                // Render to screen
+                surfaceView?.let { sv ->
+                    bitmap?.let { renderToScreen(sv, it) }
+                }
+
+                Log.d(TAG, "Loaded ${drawnShapes.size} shapes from database for note $noteId")
+                isLoadingFromDatabase = false
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading shapes from database", e)
+                isLoadingFromDatabase = false
+            }
+        }
     }
 
     override fun createTouchHelper(surfaceView: SurfaceView): BaseTouchHelper {
@@ -86,11 +149,47 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
     override fun onPauseDrawing() {
         onyxTouchHelper?.setRawDrawingEnabled(false)
+
+        // Save current state to database
+        saveCurrentStateToDatabase()
     }
 
     override fun onCleanupSDK() {
         onyxTouchHelper?.closeRawDrawing()
+
+        // Save final state before cleanup
+        saveCurrentStateToDatabase()
+
         drawnShapes.clear()
+    }
+
+    private fun saveCurrentStateToDatabase() {
+        currentNote?.let { note ->
+            if (!isLoadingFromDatabase) {
+                saveShapesToDatabase(note.id)
+            }
+        }
+    }
+
+    private fun saveShapesToDatabase(noteId: String) {
+        lifecycleScope.launch {
+            try {
+                // Clear existing shapes for this note
+                databaseManager.repository.deleteAllShapesInNote(noteId)
+
+                // Convert and save current shapes
+                val databaseShapes = drawnShapes.map { drawingShape ->
+                    ShapeUtils.convertToDatabase(drawingShape, noteId, currentPenProfile)
+                }
+
+                databaseManager.repository.saveShapes(databaseShapes)
+
+                Log.d(TAG, "Saved ${databaseShapes.size} shapes to database for note $noteId")
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving shapes to database", e)
+            }
+        }
     }
 
     override fun updateActiveSurface() {
@@ -182,6 +281,14 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         override fun onEndRawDrawing(b: Boolean, touchPoint: TouchPoint?) {
             isDrawingInProgress = false
             enableFingerTouch()
+
+            // Save the new shape to database immediately
+            currentNote?.let { note ->
+                if (!isLoadingFromDatabase && drawnShapes.isNotEmpty()) {
+                    saveShapeToDatabase(drawnShapes.last(), note.id)
+                }
+            }
+
             forceScreenRefresh()
             EditorState.notifyDrawingEnded()
         }
@@ -216,6 +323,18 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         }
     }
 
+    private fun saveShapeToDatabase(shape: Shape, noteId: String) {
+        lifecycleScope.launch {
+            try {
+                val databaseShape = ShapeUtils.convertToDatabase(shape, noteId, currentPenProfile)
+                databaseManager.repository.saveShape(databaseShape)
+                Log.d(TAG, "Saved shape to database for note $noteId")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving shape to database", e)
+            }
+        }
+    }
+
     private fun drawScribbleToBitmap(points: List<TouchPoint>, touchPointList: TouchPointList) {
         Log.d(TAG, "drawScribbleToBitmap called list size " + touchPointList.size())
         surfaceView?.let { sv ->
@@ -226,7 +345,6 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
             drawnShapes.add(shape)
 
             // Render the new shape to the bitmap
-            // fixme i dont think either of next to lines do anything necessary
             renderShapeToBitmap(shape)
             renderToScreen(sv, bitmap)
         }
@@ -309,6 +427,14 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     // Add method to clear all drawings
     fun clearDrawing() {
         drawnShapes.clear()
+
+        // Clear from database too
+        currentNote?.let { note ->
+            lifecycleScope.launch {
+                databaseManager.repository.deleteAllShapesInNote(note.id)
+            }
+        }
+
         surfaceView?.let { sv ->
             bitmap?.recycle()
             bitmap = null

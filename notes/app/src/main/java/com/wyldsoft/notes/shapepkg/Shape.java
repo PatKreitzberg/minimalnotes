@@ -14,8 +14,8 @@ import com.onyx.android.sdk.pen.data.TouchPointList;
 import java.util.List;
 
 public class Shape {
-    protected int shapeType;
-    protected int texture;
+    public int shapeType;
+    public int texture;
     protected int strokeColor;
     protected float strokeWidth;
     protected boolean transparent;

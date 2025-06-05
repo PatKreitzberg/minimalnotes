@@ -6,6 +6,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,16 +22,21 @@ import kotlinx.coroutines.launch
 import com.wyldsoft.notes.editor.EditorState
 import com.wyldsoft.notes.pen.PenProfile
 
-
+/**
+ * Updated toolbar with 5 pen profiles and an eraser button
+ * Handles drawing and erasing mode switching
+ */
 @Composable
 fun UpdatedToolbar(
     editorState: EditorState,
-    onPenProfileChanged: (PenProfile) -> Unit = {}
+    onPenProfileChanged: (PenProfile) -> Unit = {},
+    onEraserModeChanged: (Boolean) -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     var selectedProfileIndex by remember { mutableStateOf(0) } // Default to leftmost (index 0)
     var isStrokeSelectionOpen by remember { mutableStateOf(false) }
     var strokePanelRect by remember { mutableStateOf<Rect?>(null) }
+    var eraserModeEnabled by remember { mutableStateOf(false) }
 
     // Add a flag to track if we're waiting for panel to close
     var isPanelClosing by remember { mutableStateOf(false) }
@@ -50,9 +57,6 @@ fun UpdatedToolbar(
 
     fun forceUIRefresh() {
         refreshCounter++
-//        scope.launch {
-//            EditorState.refreshUi.emit(Unit)
-//        }
         Log.d("Toolbar:", "UI Refresh triggered: $refreshCounter")
     }
 
@@ -64,7 +68,6 @@ fun UpdatedToolbar(
 
             val excludeRects = editorState.stateExcludeRects.values.toList()
             EditorState.updateExclusionZones(excludeRects)
-            //forceUIRefresh()
         }
     }
 
@@ -91,7 +94,6 @@ fun UpdatedToolbar(
         // Set up the callback for after panel is removed
         onPanelRemoved = {
             removeStrokeOptionPanelRect()
-            //forceUIRefresh()
             scope.launch {
                 println("REFRESH: onPanelRemoved about to forceRefresh()")
                 EditorState.isStrokeOptionsOpen.emit(false)
@@ -105,6 +107,14 @@ fun UpdatedToolbar(
     }
 
     fun handleProfileClick(profileIndex: Int) {
+        // Exit eraser mode when selecting a pen profile
+        if (eraserModeEnabled) {
+            eraserModeEnabled = false
+            editorState.eraserMode = false
+            onEraserModeChanged(false)
+            EditorState.setEraserMode(false)
+        }
+
         if (selectedProfileIndex == profileIndex && isStrokeSelectionOpen) {
             // Same profile clicked - close panel
             closeStrokeOptionsPanel()
@@ -121,6 +131,21 @@ fun UpdatedToolbar(
             onPenProfileChanged(newProfile)
             EditorState.updatePenProfile(newProfile)
         }
+    }
+
+    fun handleEraserClick() {
+        // Close stroke options panel if open
+        if (isStrokeSelectionOpen) {
+            closeStrokeOptionsPanel()
+        }
+
+        // Toggle eraser mode
+        eraserModeEnabled = !eraserModeEnabled
+        editorState.eraserMode = eraserModeEnabled
+        onEraserModeChanged(eraserModeEnabled)
+        EditorState.setEraserMode(eraserModeEnabled)
+
+        Log.d("Toolbar", "Eraser mode toggled to: $eraserModeEnabled")
     }
 
     fun updateProfile(newProfile: PenProfile) {
@@ -146,18 +171,28 @@ fun UpdatedToolbar(
             }
         }
 
-//        launch {
-//            EditorState.forceScreenRefresh.collect {
-//                println("REFRESH: Force screen refresh requested")
-//                forceUIRefresh()
-//            }
-//        }
+        launch {
+            EditorState.erasingStarted.collect {
+                if (isStrokeSelectionOpen) {
+                    println("Erasing started - closing stroke options panel")
+                    closeStrokeOptionsPanel()
+                }
+            }
+        }
     }
 
     // Monitor drawing state changes
     LaunchedEffect(editorState.isDrawing) {
         if (editorState.isDrawing && isStrokeSelectionOpen) {
             println("REFRESH: Drawing started - closing stroke options panel")
+            closeStrokeOptionsPanel()
+        }
+    }
+
+    // Monitor erasing state changes
+    LaunchedEffect(editorState.isErasing) {
+        if (editorState.isErasing && isStrokeSelectionOpen) {
+            println("REFRESH: Erasing started - closing stroke options panel")
             closeStrokeOptionsPanel()
         }
     }
@@ -174,9 +209,6 @@ fun UpdatedToolbar(
         if (editorState.stateExcludeRectsModified) {
             println("Exclusion rects modified - current zones: ${editorState.stateExcludeRects.keys}")
             editorState.stateExcludeRectsModified = false
-//            if (!isPanelClosing) {  // Only refresh if not waiting for panel to close
-//                //forceUIRefresh()
-//            }
         }
     }
 
@@ -187,7 +219,7 @@ fun UpdatedToolbar(
     }
 
     Column {
-        // Main toolbar - single row with 5 profile buttons
+        // Main toolbar - single row with 5 profile buttons + eraser button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -197,29 +229,35 @@ fun UpdatedToolbar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Profiles:", color = Color.Black, fontSize = 12.sp)
+            Text("Tools:", color = Color.Black, fontSize = 12.sp)
 
             // 5 Profile buttons
             profiles.forEachIndexed { index, profile ->
                 ProfileButton(
                     profile = profile,
-                    isSelected = selectedProfileIndex == index,
+                    isSelected = selectedProfileIndex == index && !eraserModeEnabled,
                     onClick = { handleProfileClick(index) }
                 )
             }
+
+            // Eraser button
+            EraserButton(
+                isSelected = eraserModeEnabled,
+                onClick = { handleEraserClick() }
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 
             // Debug info
             Text(
-                text = "Profile: ${selectedProfileIndex + 1} | ${currentProfile.penType.displayName} | Refresh: $refreshCounter",
+                text = if (eraserModeEnabled) "Eraser Mode" else "Profile: ${selectedProfileIndex + 1} | ${currentProfile.penType.displayName}",
                 color = Color.Gray,
                 fontSize = 10.sp
             )
         }
 
-        // Stroke options panel with disposal detection
-        if (isStrokeSelectionOpen) {
+        // Stroke options panel with disposal detection (only show when not in eraser mode)
+        if (isStrokeSelectionOpen && !eraserModeEnabled) {
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -275,6 +313,32 @@ fun ProfileButton(
         Icon(
             imageVector = PenIconUtils.getIconForPenType(profile.penType),
             contentDescription = PenIconUtils.getContentDescriptionForPenType(profile.penType),
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+@Composable
+fun EraserButton(
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) Color.Red else Color.Transparent,
+            contentColor = if (isSelected) Color.White else Color.Red
+        ),
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) Color.Red else Color.Gray
+        ),
+        modifier = Modifier.size(48.dp),
+        contentPadding = PaddingValues(4.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Clear,
+            contentDescription = "Eraser",
             modifier = Modifier.size(24.dp)
         )
     }

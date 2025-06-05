@@ -11,17 +11,26 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import android.util.Log
 
+/**
+ * Manages the state of the drawing editor including drawing and erasing modes
+ */
 class EditorState {
     var isDrawing by mutableStateOf(false)
+    var isErasing by mutableStateOf(false)
+    var eraserMode by mutableStateOf(false) // For toolbar eraser button
     var stateExcludeRects = mutableMapOf<ExcludeRects, Rect>()
     var stateExcludeRectsModified by mutableStateOf(false)
 
     companion object {
+        private const val TAG = "EditorState"
         val isStrokeOptionsOpen = MutableSharedFlow<Boolean>()
         val drawingStarted = MutableSharedFlow<Unit>()
         val drawingEnded = MutableSharedFlow<Unit>()
+        val erasingStarted = MutableSharedFlow<Unit>()
+        val erasingEnded = MutableSharedFlow<Unit>()
         val forceScreenRefresh = MutableSharedFlow<Unit>()
         val penProfileChanged = MutableSharedFlow<PenProfile>()
+        val eraserModeChanged = MutableSharedFlow<Boolean>()
 
         private var mainActivity: BaseDrawingActivity? = null
 
@@ -43,6 +52,20 @@ class EditorState {
             }
         }
 
+        fun notifyErasingStarted() {
+            kotlinx.coroutines.GlobalScope.launch {
+                erasingStarted.emit(Unit)
+                isStrokeOptionsOpen.emit(false)
+            }
+        }
+
+        fun notifyErasingEnded() {
+            kotlinx.coroutines.GlobalScope.launch {
+                erasingEnded.emit(Unit)
+                forceScreenRefresh.emit(Unit)
+            }
+        }
+
         fun updateExclusionZones(excludeRects: List<Rect>) {
             mainActivity?.updateExclusionZones(excludeRects)
         }
@@ -60,8 +83,15 @@ class EditorState {
             mainActivity?.updatePenProfile(penProfile)
         }
 
+        fun setEraserMode(enabled: Boolean) {
+            kotlinx.coroutines.GlobalScope.launch {
+                eraserModeChanged.emit(enabled)
+            }
+            Log.d(TAG, "Eraser mode set to: $enabled")
+        }
+
         fun forceRefresh() {
-            Log.d("EditorState:", "forceRefresh()");
+            Log.d(TAG, "forceRefresh()")
             kotlinx.coroutines.GlobalScope.launch {
                 forceScreenRefresh.emit(Unit)
             }

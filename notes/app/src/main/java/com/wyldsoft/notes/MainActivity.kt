@@ -20,10 +20,9 @@ import com.wyldsoft.notes.ui.viewmodels.EditorViewModel
 
 /**
  * Main activity that handles navigation between HomeView and EditorView
- * This class extends the Onyx-specific implementation for drawing capabilities
+ * This class extends the Onyx-specific implementation for drawing capabilities including erasing
  */
 class MainActivity : OnyxDrawingActivity() {
-
     private lateinit var navigationManager: NavigationManager
     private lateinit var databaseManager: DatabaseManager
 
@@ -94,6 +93,9 @@ class MainActivity : OnyxDrawingActivity() {
                     onPenProfileChanged = { penProfile ->
                         updatePenProfile(penProfile)
                     },
+                    onEraserModeChanged = { eraserEnabled ->
+                        updateEraserMode(eraserEnabled)
+                    },
                     onNavigateBack = {
                         // Force enable finger touch before navigating back
                         enableFingerTouch()
@@ -124,11 +126,17 @@ class MainActivity : OnyxDrawingActivity() {
         }
     }
 
+    // Method to handle eraser mode changes from toolbar
+    fun updateEraserMode(enabled: Boolean) {
+        setEraserMode(enabled)
+    }
+
     companion object {
         /**
          * Factory method to create the appropriate drawing activity
          * based on device type or configuration
          */
+        private const val TAG = "MainActivity"
         fun createForDevice(): Class<out MainActivity> {
             // Future: Add device detection logic here
             // For now, always return Onyx implementation

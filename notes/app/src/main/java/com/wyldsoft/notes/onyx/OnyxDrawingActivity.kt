@@ -28,9 +28,14 @@ import com.wyldsoft.notes.pen.PenType
 import com.wyldsoft.notes.database.DatabaseManager
 import com.wyldsoft.notes.database.ShapeUtils
 import com.wyldsoft.notes.database.entities.Note
+import com.wyldsoft.notes.utils.EraserUtils
 import kotlinx.coroutines.launch
 import androidx.core.graphics.createBitmap
 
+/**
+ * Onyx-specific implementation of BaseDrawingActivity with full drawing and erasing support
+ * Handles both stylus drawing/erasing and programmatic eraser mode
+ */
 open class OnyxDrawingActivity : BaseDrawingActivity() {
     private var rxManager: RxManager? = null
     private var onyxTouchHelper: TouchHelper? = null
@@ -49,6 +54,11 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     // Add this property to track if we're loading from database
     private var isLoadingFromDatabase = false
 
+    // Erasing state
+    private var isErasingInProgress = false
+    private var eraserModeEnabled = false
+    private val shapesToErase = mutableSetOf<Shape>()
+
     override fun initializeSDK() {
         // Onyx-specific initialization
         rendererHelper = RendererHelper()
@@ -58,6 +68,15 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
         // Load current note if available
         loadCurrentNote()
+
+        // Listen for eraser mode changes
+        lifecycleScope.launch {
+            EditorState.eraserModeChanged.collect { enabled ->
+                eraserModeEnabled = enabled
+                updateTouchHelperForEraserMode()
+                Log.d(TAG, "Eraser mode changed to: $enabled")
+            }
+        }
     }
 
     private fun loadCurrentNote() {
@@ -235,6 +254,20 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         }
     }
 
+    private fun updateTouchHelperForEraserMode() {
+        onyxTouchHelper?.let { helper ->
+            if (eraserModeEnabled) {
+                // In eraser mode, we still use drawing callbacks but interpret them as erasing
+                // The actual erasing detection happens in the drawing callbacks
+                helper.setRawDrawingEnabled(true)
+                helper.setRawDrawingRenderEnabled(false) // No visual feedback while erasing
+            } else {
+                // Normal drawing mode
+                helper.setRawDrawingRenderEnabled(true)
+            }
+        }
+    }
+
     override fun updateTouchHelperExclusionZones(excludeRects: List<Rect>) {
         onyxTouchHelper?.let { helper ->
             helper.setRawDrawingEnabled(false)
@@ -249,7 +282,7 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
             helper.setStrokeStyle(currentPenProfile.getOnyxStrokeStyle())
 
             helper.setRawDrawingEnabled(true)
-            helper.setRawDrawingRenderEnabled(true)
+            helper.setRawDrawingRenderEnabled(!eraserModeEnabled)
         }
     }
 
@@ -272,8 +305,42 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         onyxDeviceReceiver?.enable(this, false)
     }
 
+    /**
+     * Refresh the canvas immediately after erasing
+     * Uses efficient rendering for real-time erasing feedback
+     */
+    private fun refreshCanvasAfterErasing() {
+
+        Log.d(TAG, "refreshCanvasAfterErasing")
+
+        surfaceView?.let { sv ->
+            bitmap?.recycle()
+            bitmap = null
+            bitmapCanvas = null
+            cleanSurfaceView(sv)
+        }
+
+        surfaceView?.let { sv ->
+            // Recreate bitmap from remaining shapes
+            recreateBitmapFromShapes()
+            Log.d(TAG, "refreshing 1")
+            // Render to screen immediately
+            bitmap?.let { bmp ->
+                // Use direct rendering for faster response
+                Log.d(TAG, "refreshing 2")
+                getRxManager().enqueue(
+                    RendererToScreenRequest(sv, bmp), null
+                )
+            }
+        }
+    }
+
+    /**
+     * Force a complete screen refresh
+     */
     override fun forceScreenRefresh() {
-        Log.d("Onyx", "forceScreenRefresh() called")
+        Log.d(TAG, "forceScreenRefresh() called")
+        bitmapCanvas?.drawColor(Color.WHITE)
         surfaceView?.let { sv ->
             cleanSurfaceView(sv)
             // Recreate bitmap from all stored shapes
@@ -291,58 +358,132 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
     private fun createOnyxCallback() = object : com.onyx.android.sdk.pen.RawInputCallback() {
         override fun onBeginRawDrawing(b: Boolean, touchPoint: TouchPoint?) {
-            isDrawingInProgress = true
-            disableFingerTouch()
-            EditorState.notifyDrawingStarted()
+            if (eraserModeEnabled) {
+                // Treat as erasing when in eraser mode
+                onBeginRawErasing(b, touchPoint)
+            } else {
+                // Normal drawing
+                isDrawingInProgress = true
+                disableFingerTouch()
+                EditorState.notifyDrawingStarted()
+            }
         }
 
         override fun onEndRawDrawing(b: Boolean, touchPoint: TouchPoint?) {
-            isDrawingInProgress = false
-            // Re-enable finger touch after drawing ends
-            enableFingerTouch()
+            if (eraserModeEnabled) {
+                // Treat as erasing when in eraser mode
+                onEndRawErasing(b, touchPoint)
+            } else {
+                // Normal drawing
+                isDrawingInProgress = false
+                // Re-enable finger touch after drawing ends
+                enableFingerTouch()
 
-            // Save the new shape to database immediately
-            currentNote?.let { note ->
-                if (!isLoadingFromDatabase && drawnShapes.isNotEmpty()) {
-                    saveShapeToDatabase(drawnShapes.last(), note.id)
+                // Save the new shape to database immediately
+                currentNote?.let { note ->
+                    if (!isLoadingFromDatabase && drawnShapes.isNotEmpty()) {
+                        saveShapeToDatabase(drawnShapes.last(), note.id)
+                    }
                 }
-            }
 
-            forceScreenRefresh()
-            EditorState.notifyDrawingEnded()
+                forceScreenRefresh()
+                EditorState.notifyDrawingEnded()
+            }
         }
 
         override fun onRawDrawingTouchPointMoveReceived(touchPoint: TouchPoint?) {
-            // Handle move events if needed
+            if (eraserModeEnabled) {
+                // Treat as erasing when in eraser mode
+                onRawErasingTouchPointMoveReceived(touchPoint)
+            } else {
+                // Handle move events for drawing if needed
+            }
         }
 
         override fun onRawDrawingTouchPointListReceived(touchPointList: TouchPointList?) {
-            touchPointList?.points?.let { points ->
-                if (!isDrawingInProgress) {
-                    isDrawingInProgress = true
+            if (eraserModeEnabled) {
+                // Treat as erasing when in eraser mode
+                onRawErasingTouchPointListReceived(touchPointList)
+            } else {
+                // Normal drawing
+                touchPointList?.points?.let { points ->
+                    if (!isDrawingInProgress) {
+                        isDrawingInProgress = true
+                    }
+                    drawScribbleToBitmap(points, touchPointList)
                 }
-                drawScribbleToBitmap(points, touchPointList)
             }
         }
 
         override fun onBeginRawErasing(b: Boolean, touchPoint: TouchPoint?) {
-            // Handle erasing start
-            isDrawingInProgress = true
+            Log.d(TAG, "onBeginRawErasing called")
+            isErasingInProgress = true
             disableFingerTouch()
+            shapesToErase.clear()
+            EditorState.notifyErasingStarted()
         }
 
         override fun onEndRawErasing(b: Boolean, touchPoint: TouchPoint?) {
-            // Handle erasing end
-            isDrawingInProgress = false
+            Log.d(TAG, "onEndRawErasing called")
+            isErasingInProgress = false
             enableFingerTouch()
+
+            // Update database - remove erased shapes
+            if (shapesToErase.isNotEmpty()) {
+                currentNote?.let { note ->
+                    saveErasedShapesToDatabase(note.id, shapesToErase.toList())
+                }
+
+                Log.d(TAG, "Finished erasing ${shapesToErase.size} shapes")
+                shapesToErase.clear()
+            }
+
+            // Final refresh to ensure consistency
+            forceScreenRefresh()
+            EditorState.notifyErasingEnded()
         }
 
         override fun onRawErasingTouchPointMoveReceived(touchPoint: TouchPoint?) {
-            // Handle erase move
+            // Handle individual eraser point for real-time erasing feedback
+            touchPoint?.let { point ->
+                // Only find shapes that haven't been erased yet
+                val availableShapes = drawnShapes.toList() // Create snapshot
+                val newShapesToErase = EraserUtils.findShapesToEraseAtPoint(point, availableShapes)
+
+                if (newShapesToErase.isNotEmpty()) {
+                    // Remove the shapes immediately for real-time erasing
+                    drawnShapes.removeAll(newShapesToErase)
+                    shapesToErase.addAll(newShapesToErase)
+
+                    // Immediately refresh the canvas to show the erasing effect
+                    refreshCanvasAfterErasing()
+
+                    Log.d(TAG, "Erased ${newShapesToErase.size} shapes at point move")
+                }
+            }
         }
 
         override fun onRawErasingTouchPointListReceived(touchPointList: TouchPointList?) {
-            // Handle erase list
+            Log.d(TAG, "onRawErasingTouchPointListReceived called with ${touchPointList?.size() ?: 0} points")
+
+            touchPointList?.let { eraserPath ->
+                // Only find shapes that haven't been erased yet
+                val availableShapes = drawnShapes.toList() // Create snapshot
+                val newShapesToErase = EraserUtils.findShapesToErase(eraserPath, availableShapes)
+
+                if (newShapesToErase.isNotEmpty()) {
+                    // Remove the shapes immediately for real-time erasing
+                    drawnShapes.removeAll(newShapesToErase)
+                    shapesToErase.addAll(newShapesToErase)
+
+                    // Immediately refresh the canvas to show the erasing effect
+                    refreshCanvasAfterErasing()
+
+                    Log.d(TAG, "Immediately erased ${newShapesToErase.size} shapes, total erased: ${shapesToErase.size}")
+                } else {
+                    Log.d(TAG, "No new shapes to erase at this point")
+                }
+            }
         }
     }
 
@@ -354,6 +495,25 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
                 Log.d(TAG, "Saved shape to database for note $noteId")
             } catch (e: Exception) {
                 Log.e(TAG, "Error saving shape to database", e)
+            }
+        }
+    }
+
+    private fun saveErasedShapesToDatabase(noteId: String, erasedShapes: List<Shape>) {
+        lifecycleScope.launch {
+            try {
+                // Simply save all remaining shapes (effectively removing the erased ones)
+                databaseManager.repository.deleteAllShapesInNote(noteId)
+
+                val remainingDatabaseShapes = drawnShapes.map { drawingShape ->
+                    ShapeUtils.convertToDatabase(drawingShape, noteId, currentPenProfile)
+                }
+
+                databaseManager.repository.saveShapes(remainingDatabaseShapes)
+
+                Log.d(TAG, "Updated database after erasing ${erasedShapes.size} shapes for note $noteId")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error updating database after erasing", e)
             }
         }
     }
@@ -465,4 +625,25 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
             cleanSurfaceView(sv)
         }
     }
+
+    // Method to toggle eraser mode programmatically (for toolbar button)
+    fun toggleEraserMode() {
+        eraserModeEnabled = !eraserModeEnabled
+        updateTouchHelperForEraserMode()
+        EditorState.setEraserMode(eraserModeEnabled)
+        Log.d(TAG, "Toggled eraser mode to: $eraserModeEnabled")
+    }
+
+    // Method to set eraser mode programmatically
+    fun setEraserMode(enabled: Boolean) {
+        if (eraserModeEnabled != enabled) {
+            eraserModeEnabled = enabled
+            updateTouchHelperForEraserMode()
+            EditorState.setEraserMode(eraserModeEnabled)
+            Log.d(TAG, "Set eraser mode to: $eraserModeEnabled")
+        }
+    }
+
+    // Method to check if currently in eraser mode
+    fun isEraserModeEnabled(): Boolean = eraserModeEnabled
 }

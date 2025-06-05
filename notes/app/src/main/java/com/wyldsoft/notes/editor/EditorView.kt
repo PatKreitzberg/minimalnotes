@@ -13,20 +13,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import com.wyldsoft.notes.DrawingCanvas
 import com.wyldsoft.notes.ui.components.UpdatedToolbar
 import com.wyldsoft.notes.pen.PenProfile
 import com.wyldsoft.notes.ui.viewmodels.EditorViewModel
 import com.wyldsoft.notes.ui.gestures.SwipeBackGestureWrapper
+import com.wyldsoft.notes.onyx.OnyxDrawingActivity
 
 /**
- * EditorView for drawing with navigation support and swipe back gesture
+ * EditorView for drawing with navigation support, swipe back gesture, and erasing functionality
  */
 @Composable
 fun EditorView(
     viewModel: EditorViewModel = viewModel(),
     onSurfaceViewCreated: (android.view.SurfaceView) -> Unit = {},
     onPenProfileChanged: (PenProfile) -> Unit = {},
+    onEraserModeChanged: (Boolean) -> Unit = {},
     onNavigateBack: () -> Unit = {}
 ) {
     val editorState = remember { EditorState() }
@@ -57,10 +60,37 @@ fun EditorView(
         viewModel.updateCurrentNote()
     }
 
+    // Listen for erasing events to update UI state
+    LaunchedEffect(Unit) {
+        launch {
+            EditorState.erasingStarted.collect {
+                editorState.isErasing = true
+            }
+        }
+
+        launch {
+            EditorState.erasingEnded.collect {
+                editorState.isErasing = false
+            }
+        }
+
+        launch {
+            EditorState.drawingStarted.collect {
+                editorState.isDrawing = true
+            }
+        }
+
+        launch {
+            EditorState.drawingEnded.collect {
+                editorState.isDrawing = false
+            }
+        }
+    }
+
     // Wrap entire editor in swipe gesture handler
     SwipeBackGestureWrapper(
         onSwipeBack = handleBackNavigation,
-        enabled = !editorState.isDrawing // Disable swipe when actively drawing
+        enabled = !editorState.isDrawing && !editorState.isErasing // Disable swipe when actively drawing or erasing
     ) {
         Column(
             modifier = Modifier
@@ -79,10 +109,11 @@ fun EditorView(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Drawing toolbar with 5 profiles
+            // Drawing toolbar with 5 profiles + eraser
             UpdatedToolbar(
                 editorState = editorState,
-                onPenProfileChanged = onPenProfileChanged
+                onPenProfileChanged = onPenProfileChanged,
+                onEraserModeChanged = onEraserModeChanged
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -127,6 +158,14 @@ fun EditorView(
                         text = "Drawing State: ${if (editorState.isDrawing) "Active" else "Inactive"}",
                         fontSize = 12.sp
                     )
+                    Text(
+                        text = "Erasing State: ${if (editorState.isErasing) "Active" else "Inactive"}",
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = "Eraser Mode: ${if (editorState.eraserMode) "Enabled" else "Disabled"}",
+                        fontSize = 12.sp
+                    )
 
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -138,8 +177,10 @@ fun EditorView(
                     Text(
                         text = "• Tap back button to return to home\n" +
                                 "• Swipe right from left edge to go back\n" +
-                                "• Swipe gesture disabled while drawing\n" +
-                                "• Your drawings are automatically saved",
+                                "• Swipe gesture disabled while drawing/erasing\n" +
+                                "• Your drawings are automatically saved\n" +
+                                "• Use eraser button or flip stylus to erase\n" +
+                                "• Erasing removes entire strokes that intersect",
                         fontSize = 10.sp,
                         color = Color.Gray
                     )

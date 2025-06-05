@@ -50,9 +50,9 @@ fun UpdatedToolbar(
 
     fun forceUIRefresh() {
         refreshCounter++
-        scope.launch {
-            EditorState.refreshUi.emit(Unit)
-        }
+//        scope.launch {
+//            EditorState.refreshUi.emit(Unit)
+//        }
         Log.d("Toolbar:", "UI Refresh triggered: $refreshCounter")
     }
 
@@ -64,7 +64,7 @@ fun UpdatedToolbar(
 
             val excludeRects = editorState.stateExcludeRects.values.toList()
             EditorState.updateExclusionZones(excludeRects)
-            forceUIRefresh()
+            //forceUIRefresh()
         }
     }
 
@@ -91,7 +91,7 @@ fun UpdatedToolbar(
         // Set up the callback for after panel is removed
         onPanelRemoved = {
             removeStrokeOptionPanelRect()
-            forceUIRefresh()
+            //forceUIRefresh()
             scope.launch {
                 println("REFRESH: onPanelRemoved about to forceRefresh()")
                 EditorState.isStrokeOptionsOpen.emit(false)
@@ -146,12 +146,12 @@ fun UpdatedToolbar(
             }
         }
 
-        launch {
-            EditorState.forceScreenRefresh.collect {
-                println("REFRESH: Force screen refresh requested")
-                forceUIRefresh()
-            }
-        }
+//        launch {
+//            EditorState.forceScreenRefresh.collect {
+//                println("REFRESH: Force screen refresh requested")
+//                forceUIRefresh()
+//            }
+//        }
     }
 
     // Monitor drawing state changes
@@ -174,9 +174,9 @@ fun UpdatedToolbar(
         if (editorState.stateExcludeRectsModified) {
             println("Exclusion rects modified - current zones: ${editorState.stateExcludeRects.keys}")
             editorState.stateExcludeRectsModified = false
-            if (!isPanelClosing) {  // Only refresh if not waiting for panel to close
-                forceUIRefresh()
-            }
+//            if (!isPanelClosing) {  // Only refresh if not waiting for panel to close
+//                //forceUIRefresh()
+//            }
         }
     }
 

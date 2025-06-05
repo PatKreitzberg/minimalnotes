@@ -61,7 +61,7 @@ fun UpdatedStrokeOptionsPanel(
             penType = selectedPenType
         )
         onProfileChanged(newProfile)
-        EditorState.refreshUi.emit(Unit)
+        //EditorState.refreshUi.emit(Unit)
     }
 
     Column(

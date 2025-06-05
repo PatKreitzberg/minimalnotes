@@ -71,6 +71,19 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     fun setCurrentNote(note: Note) {
         currentNote = note
         loadShapesFromDatabase(note.id)
+
+        // Ensure proper touch state when switching to editor
+        enableFingerTouch()
+    }
+
+    // Add method to handle navigation to home view
+    fun prepareForHomeView() {
+        // Disable drawing and ensure finger touch is enabled
+        onyxTouchHelper?.setRawDrawingEnabled(false)
+        enableFingerTouch()
+
+        // Save current state
+        saveCurrentStateToDatabase()
     }
 
     private fun loadShapesFromDatabase(noteId: String) {
@@ -145,6 +158,8 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
     override fun onResumeDrawing() {
         onyxTouchHelper?.setRawDrawingEnabled(true)
+        // Ensure finger touch is enabled when resuming drawing
+        enableFingerTouch()
     }
 
     override fun onPauseDrawing() {
@@ -152,6 +167,9 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
         // Save current state to database
         saveCurrentStateToDatabase()
+
+        // Ensure finger touch is enabled when pausing
+        enableFingerTouch()
     }
 
     override fun onCleanupSDK() {
@@ -280,6 +298,7 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
         override fun onEndRawDrawing(b: Boolean, touchPoint: TouchPoint?) {
             isDrawingInProgress = false
+            // Re-enable finger touch after drawing ends
             enableFingerTouch()
 
             // Save the new shape to database immediately
@@ -308,10 +327,14 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
         override fun onBeginRawErasing(b: Boolean, touchPoint: TouchPoint?) {
             // Handle erasing start
+            isDrawingInProgress = true
+            disableFingerTouch()
         }
 
         override fun onEndRawErasing(b: Boolean, touchPoint: TouchPoint?) {
             // Handle erasing end
+            isDrawingInProgress = false
+            enableFingerTouch()
         }
 
         override fun onRawErasingTouchPointMoveReceived(touchPoint: TouchPoint?) {

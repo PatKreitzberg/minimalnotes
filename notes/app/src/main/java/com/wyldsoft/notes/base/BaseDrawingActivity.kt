@@ -99,7 +99,7 @@ abstract class BaseDrawingActivity : ComponentActivity() {
         Log.d(TAG, "Updated paint: color=${currentPenProfile.strokeColor}, width=${currentPenProfile.strokeWidth}")
     }
 
-    private fun handleSurfaceViewCreated(sv: SurfaceView) {
+    fun handleSurfaceViewCreated(sv: SurfaceView) {
         surfaceView = sv
         initializeTouchHelper(sv)
     }

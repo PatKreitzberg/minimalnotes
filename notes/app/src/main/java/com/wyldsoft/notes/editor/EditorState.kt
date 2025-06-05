@@ -17,7 +17,6 @@ class EditorState {
     var stateExcludeRectsModified by mutableStateOf(false)
 
     companion object {
-        //val refreshUi = MutableSharedFlow<Unit>()
         val isStrokeOptionsOpen = MutableSharedFlow<Boolean>()
         val drawingStarted = MutableSharedFlow<Unit>()
         val drawingEnded = MutableSharedFlow<Unit>()
@@ -66,13 +65,6 @@ class EditorState {
             kotlinx.coroutines.GlobalScope.launch {
                 forceScreenRefresh.emit(Unit)
             }
-//            mainActivity?.let { activity ->
-//                activity.runOnUiThread {
-//                    kotlinx.coroutines.GlobalScope.launch {
-//                        refreshUi.emit(Unit)
-//                    }
-//                }
-//            }
         }
     }
 }

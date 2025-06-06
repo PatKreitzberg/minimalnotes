@@ -28,7 +28,10 @@ import com.wyldsoft.notes.pen.PenProfile
 import com.wyldsoft.notes.pen.PenType
 import com.wyldsoft.notes.utils.noRippleClickable
 
-
+/**
+ * FIXED: StrokeOptionsPanel with proper coordinate transformation
+ * The key fix is in how we handle the onGloballyPositioned callback
+ */
 @Composable
 fun UpdatedStrokeOptionsPanel(
     currentProfile: PenProfile,
@@ -60,7 +63,6 @@ fun UpdatedStrokeOptionsPanel(
             penType = selectedPenType
         )
         onProfileChanged(newProfile)
-        //EditorState.refreshUi.emit(Unit)
     }
 
     Column(
@@ -70,17 +72,25 @@ fun UpdatedStrokeOptionsPanel(
             .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
             .padding(16.dp)
             .onGloballyPositioned { coordinates ->
+                // CRITICAL FIX: Proper coordinate transformation
                 val boundingRect = coordinates.boundsInWindow()
 
+                // Convert from window coordinates to surface coordinates
+                // boundsInWindow() already gives us screen pixel coordinates
                 val panelRect = Rect(
-                    with(density) { boundingRect.left.toDp().value.toInt() },
-                    with(density) { boundingRect.top.toDp().value.toInt() },
-                    with(density) { boundingRect.right.toDp().value.toInt() },
-                    with(density) { boundingRect.bottom.toDp().value.toInt() }
+                    boundingRect.left.toInt(),
+                    boundingRect.top.toInt(),
+                    boundingRect.right.toInt(),
+                    boundingRect.bottom.toInt()
                 )
 
-                println("UpdatedStrokeOptionsPanel positioned: $panelRect")
-                onPanelPositioned(panelRect)
+                android.util.Log.d("StrokePanel", "Panel bounds in window: $boundingRect")
+                android.util.Log.d("StrokePanel", "Converted panel rect: $panelRect")
+
+                // Only call positioned callback if coordinates are valid
+                if (panelRect.width() > 0 && panelRect.height() > 0) {
+                    onPanelPositioned(panelRect)
+                }
             }
     ) {
         // Header with profile info and preview

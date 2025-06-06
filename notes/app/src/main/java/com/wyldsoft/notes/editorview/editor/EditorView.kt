@@ -2,6 +2,7 @@ package com.wyldsoft.notes.editorview.editor
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -100,7 +101,7 @@ fun EditorView(
                     onEraserModeChanged = onEraserModeChanged
                 )
 
-                Spacer(modifier = Modifier.height(8.dp)) // Reduced spacing
+                Spacer(modifier = Modifier.height(1.dp)) // Reduced spacing
 
                 // Expanded drawing canvas that fills remaining space
                 DrawingCanvas(
@@ -110,6 +111,7 @@ fun EditorView(
                         .fillMaxWidth()
                         .weight(1f) // Takes all remaining space
                 )
+                Text(text = "Current Note: ${currentNote?.title ?: "No note selected"}")
             }
         }
     }

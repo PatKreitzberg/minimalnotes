@@ -73,6 +73,7 @@ class OnyxRenderingManager {
 
                 Log.d(TAG, "Created new bitmap: ${sv.width}x${sv.height}")
             }
+            Log.d(TAG, "surfaceView created size ${currentBitmap!!.height}x${currentBitmap!!.width}")
             currentBitmap
         }
     }

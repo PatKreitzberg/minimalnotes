@@ -133,23 +133,25 @@ class OnyxEraserManager(
      * @param touchPointList List of touch points from eraser movement
      */
     fun processEraserMovement(touchPointList: TouchPointList?) {
-        touchPointList?.let { eraserPathList ->
-            Log.d(TAG, "Processing eraser movement with ${eraserPathList.size()} points")
+        // do nothing, will erase once user stops erasing
 
-            // Add all points to eraser path
-            eraserPath.addAll(eraserPathList.points)
-
-            // Find shapes to erase
-            val availableShapes = shapeManager.getShapesSnapshot()
-            val newShapesToErase = EraserUtils.findShapesToErase(eraserPathList, availableShapes)
-
-            if (newShapesToErase.isNotEmpty()) {
-                eraseShapesImmediately(newShapesToErase)
-                Log.d(TAG, "Erased ${newShapesToErase.size} shapes, total erased: ${currentErasingSession.erasedShapes.size}")
-            } else {
-                Log.d(TAG, "No new shapes to erase at this point")
-            }
-        }
+//        touchPointList?.let { eraserPathList ->
+//            Log.d(TAG, "Processing eraser movement with ${eraserPathList.size()} points")
+//
+//            // Add all points to eraser path
+//            eraserPath.addAll(eraserPathList.points)
+//
+//            // Find shapes to erase
+//            val availableShapes = shapeManager.getShapesSnapshot()
+//            val newShapesToErase = EraserUtils.findShapesToErase(eraserPathList, availableShapes)
+//
+//            if (newShapesToErase.isNotEmpty()) {
+//                eraseShapesImmediately(newShapesToErase)
+//                Log.d(TAG, "Erased ${newShapesToErase.size} shapes, total erased: ${currentErasingSession.erasedShapes.size}")
+//            } else {
+//                Log.d(TAG, "No new shapes to erase at this point")
+//            }
+//        }
     }
 
     /**

@@ -13,6 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wyldsoft.notes.ExcludeRects
@@ -24,8 +27,7 @@ import com.wyldsoft.notes.pen.PenProfile
 
 /**
  * Clean toolbar with 5 pen profiles and an eraser button
- * Handles drawing and erasing mode switching without debug information
- * Stroke options panel overlays instead of displacing content
+ * FIXED: Proper exclusion zone coordinate handling and cleanup
  */
 @Composable
 fun UpdatedToolbar(
@@ -34,78 +36,64 @@ fun UpdatedToolbar(
     onEraserModeChanged: (Boolean) -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
-    var selectedProfileIndex by remember { mutableStateOf(0) } // Default to leftmost (index 0)
+    val density = LocalDensity.current
+
+    var selectedProfileIndex by remember { mutableStateOf(0) }
     var isStrokeSelectionOpen by remember { mutableStateOf(false) }
-    var strokePanelRect by remember { mutableStateOf<Rect?>(null) }
     var eraserModeEnabled by remember { mutableStateOf(false) }
 
-    // Add a flag to track if we're waiting for panel to close
-    var isPanelClosing by remember { mutableStateOf(false) }
-
-    // Add a callback for when panel is fully removed
-    var onPanelRemoved: (() -> Unit)? by remember { mutableStateOf(null) }
+    // Critical fix: Track panel cleanup state properly
+    var isPanelFullyRemoved by remember { mutableStateOf(true) }
+    var pendingCleanup by remember { mutableStateOf(false) }
 
     // Store 5 profiles
     var profiles by remember {
         mutableStateOf(PenProfile.createDefaultProfiles())
     }
 
-    // Current profile
     val currentProfile = profiles[selectedProfileIndex]
 
-    // Force refresh counter for debugging
-    var refreshCounter by remember { mutableStateOf(0) }
-
-    fun forceUIRefresh() {
-        refreshCounter++
-        Log.d("Toolbar:", "UI Refresh triggered: $refreshCounter")
-    }
-
-    fun addStrokeOptionPanelRect() {
-        strokePanelRect?.let { rect ->
-            editorState.stateExcludeRects[ExcludeRects.StrokeOptions] = rect
-            editorState.stateExcludeRectsModified = true
-            println("Added exclusion rect: $rect")
-
-            val excludeRects = editorState.stateExcludeRects.values.toList()
-            Log.d("ExcludeRects", "excludeRects ${excludeRects.size}")
-            EditorState.updateExclusionZones(excludeRects)
-        }
-    }
-
-    fun removeStrokeOptionPanelRect() {
-        editorState.stateExcludeRects.remove(ExcludeRects.StrokeOptions)
+    // FIXED: Proper exclusion zone management functions
+    fun addStrokeOptionPanelRect(rect: Rect) {
+        Log.d("Toolbar", "Adding exclusion rect: $rect")
+        editorState.stateExcludeRects[ExcludeRects.StrokeOptions] = rect
         editorState.stateExcludeRectsModified = true
-        println("Removed exclusion rect")
 
         val excludeRects = editorState.stateExcludeRects.values.toList()
+        Log.d("Toolbar", "Total exclusion rects: ${excludeRects.size}")
         EditorState.updateExclusionZones(excludeRects)
     }
 
+    fun removeStrokeOptionPanelRect() {
+        Log.d("Toolbar", "Removing exclusion rect")
+        editorState.stateExcludeRects.remove(ExcludeRects.StrokeOptions)
+
+        editorState.stateExcludeRectsModified = true
+
+        val excludeRects = editorState.stateExcludeRects.values.toList()
+        Log.d("Toolbar", "Remaining exclusion rects: ${excludeRects.size}")
+        EditorState.updateExclusionZones(excludeRects)
+
+        // Force a refresh to clear any lingering exclusion zones
+        scope.launch {
+            EditorState.forceRefresh()
+        }
+    }
+
     fun openStrokeOptionsPanel() {
-        println("Opening stroke options panel for profile $selectedProfileIndex")
+        Log.d("Toolbar", "Opening stroke options panel")
+        isPanelFullyRemoved = false
+        pendingCleanup = false
         isStrokeSelectionOpen = true
-        isPanelClosing = false
-        onPanelRemoved = null
     }
 
     fun closeStrokeOptionsPanel() {
-        println("Closing stroke options panel")
-        isPanelClosing = true
-
-        // Set up the callback for after panel is removed
-        onPanelRemoved = {
-            removeStrokeOptionPanelRect()
-            scope.launch {
-                println("REFRESH: onPanelRemoved about to forceRefresh()")
-                EditorState.isStrokeOptionsOpen.emit(false)
-                EditorState.forceRefresh()
-            }
-            isPanelClosing = false
-        }
-
-        // Trigger the panel removal
+        Log.d("Toolbar", "Closing stroke options panel")
+        pendingCleanup = true
         isStrokeSelectionOpen = false
+
+        // Immediate cleanup - don't wait for composition
+        removeStrokeOptionPanelRect()
     }
 
     fun handleProfileClick(profileIndex: Int) {
@@ -118,13 +106,10 @@ fun UpdatedToolbar(
         }
 
         if (selectedProfileIndex == profileIndex && isStrokeSelectionOpen) {
-            // Same profile clicked - close panel
             closeStrokeOptionsPanel()
         } else if (selectedProfileIndex == profileIndex && !isStrokeSelectionOpen) {
-            // Same profile clicked - open panel
             openStrokeOptionsPanel()
         } else {
-            // Different profile - switch profile and update
             if (isStrokeSelectionOpen) {
                 closeStrokeOptionsPanel()
             }
@@ -136,18 +121,14 @@ fun UpdatedToolbar(
     }
 
     fun handleEraserClick() {
-        // Close stroke options panel if open
         if (isStrokeSelectionOpen) {
             closeStrokeOptionsPanel()
         }
 
-        // Toggle eraser mode
         eraserModeEnabled = !eraserModeEnabled
         editorState.eraserMode = eraserModeEnabled
         onEraserModeChanged(eraserModeEnabled)
         EditorState.setEraserMode(eraserModeEnabled)
-
-        Log.d("Toolbar", "Eraser mode toggled to: $eraserModeEnabled")
     }
 
     fun updateProfile(newProfile: PenProfile) {
@@ -155,19 +136,15 @@ fun UpdatedToolbar(
         updatedProfiles[selectedProfileIndex] = newProfile
         profiles = updatedProfiles
 
-        // Immediately apply the new profile
         onPenProfileChanged(newProfile)
         EditorState.updatePenProfile(newProfile)
-
-        println("Profile $selectedProfileIndex updated: $newProfile")
     }
 
-    // Listen for drawing events to close panel
+    // Listen for drawing/erasing events to close panel
     LaunchedEffect(Unit) {
         launch {
             EditorState.drawingStarted.collect {
                 if (isStrokeSelectionOpen) {
-                    println("Drawing started - closing stroke options panel")
                     closeStrokeOptionsPanel()
                 }
             }
@@ -176,41 +153,25 @@ fun UpdatedToolbar(
         launch {
             EditorState.erasingStarted.collect {
                 if (isStrokeSelectionOpen) {
-                    println("Erasing started - closing stroke options panel")
                     closeStrokeOptionsPanel()
                 }
             }
         }
     }
 
-    // Monitor drawing state changes
-    LaunchedEffect(editorState.isDrawing) {
-        if (editorState.isDrawing && isStrokeSelectionOpen) {
-            println("REFRESH: Drawing started - closing stroke options panel")
+    // Monitor state changes and force cleanup
+    LaunchedEffect(editorState.isDrawing, editorState.isErasing) {
+        if ((editorState.isDrawing || editorState.isErasing) && isStrokeSelectionOpen) {
             closeStrokeOptionsPanel()
         }
     }
 
-    // Monitor erasing state changes
-    LaunchedEffect(editorState.isErasing) {
-        if (editorState.isErasing && isStrokeSelectionOpen) {
-            println("REFRESH: Erasing started - closing stroke options panel")
-            closeStrokeOptionsPanel()
-        }
-    }
-
-    // Emit stroke options state changes
+    // Ensure cleanup happens when panel closes
     LaunchedEffect(isStrokeSelectionOpen) {
-        if (!isPanelClosing) {  // Only emit if not in the middle of closing
-            EditorState.isStrokeOptionsOpen.emit(isStrokeSelectionOpen)
-        }
-    }
-
-    // Handle exclusion rect changes
-    LaunchedEffect(editorState.stateExcludeRectsModified) {
-        if (editorState.stateExcludeRectsModified) {
-            println("Exclusion rects modified - current zones: ${editorState.stateExcludeRects.keys}")
-            editorState.stateExcludeRectsModified = false
+        if (!isStrokeSelectionOpen && !isPanelFullyRemoved) {
+            Log.d("Toolbar", "Panel closed, marking as fully removed")
+            isPanelFullyRemoved = true
+            pendingCleanup = false
         }
     }
 
@@ -221,7 +182,7 @@ fun UpdatedToolbar(
     }
 
     Box {
-        // Main toolbar - single row with 5 profile buttons + divider + eraser button
+        // Main toolbar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -252,19 +213,19 @@ fun UpdatedToolbar(
             )
         }
 
-        // Stroke options panel as overlay (only show when not in eraser mode)
         if (isStrokeSelectionOpen && !eraserModeEnabled) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 64.dp) // Position below the toolbar
+                    .padding(top = 64.dp)
             ) {
+                // Track when panel is actually removed from composition
                 DisposableEffect(Unit) {
                     onDispose {
-                        // This runs when the panel is actually removed from composition
-                        println("StrokeOptionsPanel removed from composition")
-                        onPanelRemoved?.invoke()
-                        onPanelRemoved = null
+                        Log.d("Toolbar", "Panel disposed from composition")
+                        if (pendingCleanup) {
+                            removeStrokeOptionPanelRect()
+                        }
                     }
                 }
 
@@ -273,14 +234,21 @@ fun UpdatedToolbar(
                     onProfileChanged = { newProfile ->
                         updateProfile(newProfile)
                     },
-                    onPanelPositioned = { rect ->
-                        if (rect != strokePanelRect) {
-                            strokePanelRect = rect
-                            if (isStrokeSelectionOpen && !isPanelClosing) {
-                                scope.launch {
-                                    addStrokeOptionPanelRect()
-                                }
-                            }
+                    onPanelPositioned = { bounds ->
+                        Log.d("Toolbar", "Panel positioned at: $bounds")
+
+                        // CRITICAL FIX: Don't apply exclusion zone if panel is being closed
+                        if (isStrokeSelectionOpen && !pendingCleanup) {
+                            // Convert from window coordinates to surface coordinates properly
+                            // The bounds from boundsInWindow are already in screen pixels
+                            val surfaceRect = Rect(
+                                bounds.left,
+                                bounds.top,
+                                bounds.right,
+                                bounds.bottom
+                            )
+
+                            addStrokeOptionPanelRect(surfaceRect)
                         }
                     }
                 )
@@ -316,9 +284,6 @@ fun ProfileButton(
     }
 }
 
-/**
- * Vertical divider line to separate profile buttons from eraser
- */
 @Composable
 private fun VerticalDivider() {
     Box(

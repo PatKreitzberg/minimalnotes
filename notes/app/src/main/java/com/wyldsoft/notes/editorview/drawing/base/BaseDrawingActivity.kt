@@ -23,6 +23,10 @@ import com.wyldsoft.notes.pen.PenProfile
 import com.wyldsoft.notes.pen.PenType
 import com.wyldsoft.notes.ui.theme.MinimaleditorTheme
 
+/**
+ * Refactored BaseDrawingActivity with consolidated touch helper update methods
+ * REFACTORED: Simplified the touch helper update interface
+ */
 abstract class BaseDrawingActivity : ComponentActivity() {
     protected val TAG = "BaseDrawingActivity"
 
@@ -130,21 +134,29 @@ abstract class BaseDrawingActivity : ComponentActivity() {
         surfaceView.holder.addCallback(surfaceCallback)
     }
 
-    fun updatePenProfile(penProfile: PenProfile) {
+    /**
+     * Update pen profile and trigger touch helper reconfiguration
+     * REFACTORED: Now delegates to updateTouchHelperWithProfile for consistency
+     */
+    open fun updatePenProfile(penProfile: PenProfile) {
         Log.d(TAG, "Updating pen profile: $penProfile")
         currentPenProfile = penProfile
         updatePaintFromProfile()
         updateTouchHelperWithProfile()
     }
 
-    fun updateExclusionZones(excludeRects: List<Rect>) {
+    /**
+     * Update exclusion zones and trigger touch helper reconfiguration
+     * REFACTORED: Simplified interface - implementations should handle the details
+     */
+    open fun updateExclusionZones(excludeRects: List<Rect>) {
         updateTouchHelperExclusionZones(excludeRects)
-        println("forceScreenRefresh() from updateExclusionZone")
-        //forceScreenRefresh()
+        Log.d(TAG, "Updated exclusion zones, forcing screen refresh")
+        forceScreenRefresh()
     }
 
     protected open fun forceScreenRefresh() {
-        Log.d("BaseDrawingActivity:", "forceScreenRefresh()")
+        Log.d(TAG, "forceScreenRefresh()")
         bitmapCanvas?.drawColor(Color.WHITE)
         surfaceView?.let { sv ->
             cleanSurfaceView(sv)
@@ -175,8 +187,20 @@ abstract class BaseDrawingActivity : ComponentActivity() {
     protected abstract fun onPauseDrawing()
     protected abstract fun onCleanupSDK()
     protected abstract fun updateActiveSurface()
+
+    /**
+     * REFACTORED: Single method for touch helper updates related to pen profile changes
+     * Implementations should consolidate all touch helper configuration logic here
+     */
     protected abstract fun updateTouchHelperWithProfile()
+
+    /**
+     * REFACTORED: Single method for touch helper updates related to exclusion zone changes
+     * Implementations should consolidate all exclusion zone handling logic here
+     * Note: This can delegate to the same internal method as updateTouchHelperWithProfile
+     */
     protected abstract fun updateTouchHelperExclusionZones(excludeRects: List<Rect>)
+
     protected abstract fun initializeDeviceReceiver()
     protected abstract fun onCleanupDeviceReceiver()
 }

@@ -16,9 +16,9 @@ import com.wyldsoft.notes.backend.database.entities.Note
 import kotlinx.coroutines.launch
 
 /**
- * Refactored Onyx-specific implementation of BaseDrawingActivity
- * This class now focuses only on core drawing activity functionality and coordination
- * Delegates specific responsibilities to specialized manager classes
+ * Refactored Onyx-specific implementation with consolidated touch helper update function
+ * REFACTORED: Combined updateTouchHelperWithProfile and updateTouchHelperExclusionZones
+ * into a single updateTouchHelper function to eliminate code duplication
  */
 open class OnyxDrawingActivity : BaseDrawingActivity() {
     companion object {
@@ -38,9 +38,6 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
     // Public access to surface view and pen profile for managers
     override var surfaceView: SurfaceView? = null
-
-    // Public getter for current pen profile
-    //fun getCurrentPenProfile() = currentPenProfile
 
     override fun initializeSDK() {
         // Initialize all manager components
@@ -121,31 +118,55 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     }
 
     override fun updateActiveSurface() {
-        updateTouchHelperWithProfile()
+        updateTouchHelper()
     }
 
-    override fun updateTouchHelperWithProfile() {
+    /**
+     * REFACTORED: Single consolidated function to update touch helper configuration
+     * Replaces both updateTouchHelperWithProfile and updateTouchHelperExclusionZones
+     *
+     * This function handles all touch helper reconfiguration needs:
+     * - Pen profile changes (stroke width, color, style)
+     * - Exclusion zone updates
+     * - Surface changes
+     * - Eraser mode changes
+     */
+    private fun updateTouchHelper() {
         onyxTouchHelper?.let { helper ->
+            Log.d(TAG, "Updating touch helper configuration")
+
+            // Step 1: Disable and close current drawing session
             helper.setRawDrawingEnabled(false)
             helper.closeRawDrawing()
 
+            // Step 2: Get current surface dimensions and exclusion zones
             val limit = Rect()
             surfaceView?.getLocalVisibleRect(limit)
             val excludeRects = EditorState.getCurrentExclusionRects()
 
-            Log.d(TAG, "updateTouchHelperWithProfle limit ${limit.width()}x${limit.height()} exclusion ${ArrayList(excludeRects).size}")
+            Log.d(TAG, "Touch helper update - Surface: ${limit.width()}x${limit.height()} top: ${limit.top} bot: ${limit.bottom}, Exclusions: ${excludeRects.size}")
 
+            // Step 3: Apply pen profile settings
             helper.setStrokeWidth(currentPenProfile.strokeWidth)
                 .setStrokeColor(currentPenProfile.getColorAsInt())
                 .setLimitRect(limit, ArrayList(excludeRects))
                 .openRawDrawing()
 
+            // Step 4: Set pen-specific stroke style
             helper.setStrokeStyle(currentPenProfile.getOnyxStrokeStyle())
+
+            // Step 5: Configure for current mode (drawing vs erasing)
             helper.setRawDrawingEnabled(true)
             helper.setRawDrawingRenderEnabled(!eraserManager.isEraserModeEnabled())
+
+            Log.d(TAG, "Touch helper configuration complete - Eraser mode: ${eraserManager.isEraserModeEnabled()}")
         }
     }
 
+    /**
+     * Handle eraser mode-specific touch helper updates
+     * Called when eraser mode changes to update rendering behavior
+     */
     private fun updateTouchHelperForEraserMode() {
         onyxTouchHelper?.let { helper ->
             if (eraserManager.isEraserModeEnabled()) {
@@ -157,26 +178,22 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         }
     }
 
+    /**
+     * REFACTORED: Now delegates to the consolidated updateTouchHelper function
+     */
+    override fun updateTouchHelperWithProfile() {
+        updateTouchHelper()
+    }
+
+    /**
+     * REFACTORED: Now delegates to the consolidated updateTouchHelper function
+     */
     override fun updateTouchHelperExclusionZones(excludeRects: List<Rect>) {
-        Log.d(TAG, "updateTouchHelperExclusionZones number rects ${excludeRects.size}")
+        Log.d(TAG, "updateTouchHelperExclusionZones called with ${excludeRects.size} rects")
 
-        onyxTouchHelper?.let { helper ->
-            helper.setRawDrawingEnabled(false)
-            helper.closeRawDrawing()
-
-            val limit = Rect()
-            surfaceView?.getLocalVisibleRect(limit)
-
-            Log.d(TAG, "limit ${limit.width()}x${limit.height()} exclusion ${ArrayList(excludeRects).size}")
-
-            helper.setStrokeWidth(currentPenProfile.strokeWidth)
-                .setLimitRect(limit, ArrayList(excludeRects))
-                .openRawDrawing()
-            helper.setStrokeStyle(currentPenProfile.getOnyxStrokeStyle())
-
-            helper.setRawDrawingEnabled(true)
-            helper.setRawDrawingRenderEnabled(!eraserManager.isEraserModeEnabled())
-        }
+        // The exclusion rects are already managed by EditorState.getCurrentExclusionRects()
+        // so we just need to trigger a full touch helper update
+        updateTouchHelper()
     }
 
     override fun initializeDeviceReceiver() {
@@ -242,5 +259,26 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
     open fun updateEraserMode(enabled: Boolean) {
         eraserManager.setEraserMode(enabled)
+    }
+
+    /**
+     * ENHANCED: Handle pen profile updates
+     * Now triggers the consolidated touch helper update
+     */
+    override fun updatePenProfile(penProfile: com.wyldsoft.notes.pen.PenProfile) {
+        Log.d(TAG, "Updating pen profile: $penProfile")
+        currentPenProfile = penProfile
+        updatePaintFromProfile()
+        updateTouchHelper() // Use consolidated function
+    }
+
+    /**
+     * ENHANCED: Handle exclusion zone updates
+     * Now triggers the consolidated touch helper update
+     */
+    override fun updateExclusionZones(excludeRects: List<Rect>) {
+        updateTouchHelperExclusionZones(excludeRects)
+        Log.d(TAG, "Updated exclusion zones, forcing screen refresh")
+        forceScreenRefresh()
     }
 }

@@ -141,6 +141,7 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 val firstNote = repository.getFirstNoteInNotebook(notebook.id)
+                android.util.Log.d("HomeViewModel", "Opening notebook '${notebook.name}' (ID: ${notebook.id}) with note: ${firstNote?.id} (title: ${firstNote?.title})")
                 if (firstNote != null) {
                     navigationManager.navigateToEditor(notebook, firstNote)
                 } else {
@@ -171,7 +172,8 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 val currentFolderId = navigationManager.getCurrentFolderId()
-                repository.createNotebook(name, currentFolderId)
+                val notebook = repository.createNotebook(name, currentFolderId)
+                android.util.Log.d("HomeViewModel", "Created notebook '${notebook.name}' (ID: ${notebook.id})")
                 loadCurrentFolderContent() // Refresh the view
 
             } catch (e: Exception) {

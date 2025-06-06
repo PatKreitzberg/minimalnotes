@@ -59,6 +59,7 @@ class NotesRepository(private val database: NotesDatabase) {
             id = NanoIdUtils.randomNanoId(),
             title = "Note 1"
         )
+        android.util.Log.d("NotesRepository", "Creating note '${defaultNote.title}' (ID: ${defaultNote.id}) for notebook '${notebook.name}' (ID: ${notebookId})")
         database.noteDao().createNoteInNotebook(defaultNote, notebookId)
 
         return notebook

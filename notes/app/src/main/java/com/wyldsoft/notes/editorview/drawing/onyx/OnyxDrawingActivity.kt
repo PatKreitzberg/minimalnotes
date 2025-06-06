@@ -133,6 +133,8 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
             surfaceView?.getLocalVisibleRect(limit)
             val excludeRects = EditorState.getCurrentExclusionRects()
 
+            Log.d(TAG, "updateTouchHelperWithProfle limit ${limit.width()}x${limit.height()} exclusion ${ArrayList(excludeRects).size}")
+
             helper.setStrokeWidth(currentPenProfile.strokeWidth)
                 .setStrokeColor(currentPenProfile.getColorAsInt())
                 .setLimitRect(limit, ArrayList(excludeRects))
@@ -156,12 +158,16 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     }
 
     override fun updateTouchHelperExclusionZones(excludeRects: List<Rect>) {
+        Log.d(TAG, "updateTouchHelperExclusionZones number rects ${excludeRects.size}")
+
         onyxTouchHelper?.let { helper ->
             helper.setRawDrawingEnabled(false)
             helper.closeRawDrawing()
 
             val limit = Rect()
             surfaceView?.getLocalVisibleRect(limit)
+
+            Log.d(TAG, "limit ${limit.width()}x${limit.height()} exclusion ${ArrayList(excludeRects).size}")
 
             helper.setStrokeWidth(currentPenProfile.strokeWidth)
                 .setLimitRect(limit, ArrayList(excludeRects))

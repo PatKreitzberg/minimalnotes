@@ -68,6 +68,7 @@ fun UpdatedToolbar(
             println("Added exclusion rect: $rect")
 
             val excludeRects = editorState.stateExcludeRects.values.toList()
+            Log.d("ExcludeRects", "excludeRects ${excludeRects.size}")
             EditorState.updateExclusionZones(excludeRects)
         }
     }

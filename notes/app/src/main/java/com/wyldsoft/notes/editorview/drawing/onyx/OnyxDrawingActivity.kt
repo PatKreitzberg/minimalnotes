@@ -36,6 +36,12 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     private lateinit var renderingManager: OnyxRenderingManager
     private lateinit var navigationHandler: OnyxNavigationHandler
 
+    // Public access to surface view and pen profile for managers
+    override var surfaceView: SurfaceView? = null
+
+    // Public getter for current pen profile
+    //fun getCurrentPenProfile() = currentPenProfile
+
     override fun initializeSDK() {
         // Initialize all manager components
         initializeManagers()
@@ -189,10 +195,12 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     override fun handleSurfaceViewCreated(sv: SurfaceView) {
         surfaceView = sv
 
-        // Initialize bitmap in rendering manager
-        renderingManager.initializeSurfaceView(sv)
-
         initializeTouchHelper(sv)
+
+        // If we have a current note, load its shapes now that surface is ready
+        navigationHandler.getCurrentNote()?.let { note ->
+            databaseManager.loadShapesFromDatabase(note.id, shapeManager)
+        }
     }
 
     public override fun forceScreenRefresh() {
@@ -200,7 +208,7 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
         // Create/update bitmap if needed
         surfaceView?.let { sv ->
-            renderingManager.initializeSurfaceView(sv)
+            renderingManager.createOrGetDrawingBitmap(sv)
             renderingManager.forceScreenRefresh(sv, shapeManager.getAllShapes())
         }
     }

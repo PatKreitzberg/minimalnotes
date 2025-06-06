@@ -53,15 +53,6 @@ class OnyxRenderingManager {
     }
 
     /**
-     * Initialize surface view and create initial bitmap
-     * @param surfaceView SurfaceView to initialize for
-     */
-    fun initializeSurfaceView(surfaceView: SurfaceView) {
-        createOrGetDrawingBitmap(surfaceView)
-        Log.d(TAG, "Initialized surface view with bitmap")
-    }
-
-    /**
      * Create or get the current drawing bitmap for the given surface
      * @param surfaceView SurfaceView to create bitmap for
      * @return Bitmap ready for drawing operations
@@ -76,7 +67,6 @@ class OnyxRenderingManager {
                 currentBitmap?.recycle()
 
                 // Create new bitmap
-                Log.d(TAG, "Creating new bitmap: ${sv.width}x${sv.height}")
                 currentBitmap = createBitmap(sv.width, sv.height)
                 currentCanvas = Canvas(currentBitmap!!)
                 currentCanvas?.drawColor(Color.WHITE)
@@ -111,6 +101,12 @@ class OnyxRenderingManager {
      * @param shapes Collection of shapes to render
      */
     fun recreateBitmapFromShapes(shapes: List<Shape>) {
+        // Ensure we have a bitmap to work with
+        if (currentBitmap == null) {
+            Log.w(TAG, "No bitmap available for recreating from shapes")
+            return
+        }
+
         currentBitmap?.let { bitmap ->
             // Clear the bitmap
             currentCanvas?.drawColor(Color.WHITE)
@@ -129,6 +125,24 @@ class OnyxRenderingManager {
             }
 
             Log.d(TAG, "Recreated bitmap from ${shapes.size} shapes")
+        }
+    }
+
+    /**
+     * Recreate bitmap from shapes with surface view context
+     * This ensures bitmap is properly sized for the surface
+     * @param shapes Collection of shapes to render
+     * @param surfaceView SurfaceView for bitmap dimensions
+     */
+    fun recreateBitmapFromShapes(shapes: List<Shape>, surfaceView: SurfaceView?) {
+        surfaceView?.let { sv ->
+            // Ensure bitmap is created/updated for current surface
+            createOrGetDrawingBitmap(sv)
+            // Now recreate with shapes
+            recreateBitmapFromShapes(shapes)
+        } ?: run {
+            // Fallback to existing method
+            recreateBitmapFromShapes(shapes)
         }
     }
 

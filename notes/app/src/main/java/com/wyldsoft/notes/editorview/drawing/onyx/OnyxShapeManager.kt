@@ -112,9 +112,14 @@ class OnyxShapeManager(
     /**
      * Recreate the entire drawing from all stored shapes
      * This is used after erasing operations or when loading from database
+     * @param surfaceView Optional surface view for proper bitmap sizing
      */
-    fun recreateDrawingFromShapes() {
-        renderingManager.recreateBitmapFromShapes(drawnShapes)
+    fun recreateDrawingFromShapes(surfaceView: android.view.SurfaceView? = null) {
+        if (surfaceView != null) {
+            renderingManager.recreateBitmapFromShapes(drawnShapes, surfaceView)
+        } else {
+            renderingManager.recreateBitmapFromShapes(drawnShapes)
+        }
         Log.d(TAG, "Recreated drawing from ${drawnShapes.size} shapes")
     }
 

@@ -67,8 +67,11 @@ class OnyxDatabaseManager(
                 // Replace all shapes in the manager
                 shapeManager.replaceAllShapes(drawingShapes)
 
-                // Recreate the drawing from loaded shapes
-                shapeManager.recreateDrawingFromShapes()
+                // Recreate the drawing from loaded shapes with surface view context
+                shapeManager.recreateDrawingFromShapes(activity.surfaceView)
+
+                // Force a screen refresh to show the loaded shapes
+                activity.forceScreenRefresh()
 
                 Log.d(TAG, "Successfully loaded ${drawingShapes.size} shapes from database")
                 isLoadingFromDatabase = false

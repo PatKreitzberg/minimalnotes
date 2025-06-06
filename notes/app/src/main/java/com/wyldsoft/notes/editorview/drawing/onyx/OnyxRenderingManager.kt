@@ -53,6 +53,15 @@ class OnyxRenderingManager {
     }
 
     /**
+     * Initialize surface view and create initial bitmap
+     * @param surfaceView SurfaceView to initialize for
+     */
+    fun initializeSurfaceView(surfaceView: SurfaceView) {
+        createOrGetDrawingBitmap(surfaceView)
+        Log.d(TAG, "Initialized surface view with bitmap")
+    }
+
+    /**
      * Create or get the current drawing bitmap for the given surface
      * @param surfaceView SurfaceView to create bitmap for
      * @return Bitmap ready for drawing operations
@@ -67,6 +76,7 @@ class OnyxRenderingManager {
                 currentBitmap?.recycle()
 
                 // Create new bitmap
+                Log.d(TAG, "Creating new bitmap: ${sv.width}x${sv.height}")
                 currentBitmap = createBitmap(sv.width, sv.height)
                 currentCanvas = Canvas(currentBitmap!!)
                 currentCanvas?.drawColor(Color.WHITE)

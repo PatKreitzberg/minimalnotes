@@ -68,7 +68,8 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
             eraserManager = eraserManager,
             databaseManager = databaseManager,
             renderingManager = renderingManager,
-            navigationHandler = navigationHandler
+            navigationHandler = navigationHandler,
+            activity = this // Pass activity for access to pen profile and surface view
         )
 
         onyxTouchHelper = TouchHelper.create(surfaceView, callback)
@@ -103,13 +104,13 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
 
     override fun onPauseDrawing() {
         onyxTouchHelper?.setRawDrawingEnabled(false)
-        databaseManager.saveCurrentState()
+        databaseManager.saveAllShapesToDatabase(shapeManager.getAllShapes(), currentPenProfile)
         enableFingerTouch()
     }
 
     override fun onCleanupSDK() {
         onyxTouchHelper?.closeRawDrawing()
-        databaseManager.saveCurrentState()
+        databaseManager.saveAllShapesToDatabase(shapeManager.getAllShapes(), currentPenProfile)
         shapeManager.clearShapes()
     }
 
@@ -185,20 +186,36 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         onyxDeviceReceiver?.enable(this, false)
     }
 
-    override fun forceScreenRefresh() {
-        renderingManager.forceScreenRefresh(surfaceView, shapeManager.getAllShapes())
+    override fun handleSurfaceViewCreated(sv: SurfaceView) {
+        surfaceView = sv
+
+        // Initialize bitmap in rendering manager
+        renderingManager.initializeSurfaceView(sv)
+
+        initializeTouchHelper(sv)
+    }
+
+    public override fun forceScreenRefresh() {
+        Log.d(TAG, "forceScreenRefresh() called")
+
+        // Create/update bitmap if needed
+        surfaceView?.let { sv ->
+            renderingManager.initializeSurfaceView(sv)
+            renderingManager.forceScreenRefresh(sv, shapeManager.getAllShapes())
+        }
     }
 
     // Public API for external components
     fun setCurrentNote(note: Note) {
         navigationHandler.setCurrentNote(note)
+        databaseManager.setCurrentNote(note, shapeManager)
         enableFingerTouch()
     }
 
     fun prepareForHomeView() {
         onyxTouchHelper?.setRawDrawingEnabled(false)
         enableFingerTouch()
-        databaseManager.saveCurrentState()
+        databaseManager.saveAllShapesToDatabase(shapeManager.getAllShapes(), currentPenProfile)
     }
 
     fun clearDrawing() {

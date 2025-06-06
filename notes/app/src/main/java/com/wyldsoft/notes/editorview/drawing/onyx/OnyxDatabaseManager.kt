@@ -190,8 +190,16 @@ class OnyxDatabaseManager(
      * This is called during pause/cleanup operations
      */
     fun saveCurrentState() {
-        // This method will be called from the activity with current shapes and pen profile
-        Log.d(TAG, "saveCurrentState called")
+        Log.d(TAG, "saveCurrentState called - use saveAllShapesToDatabase instead")
+    }
+
+    /**
+     * Save a single shape immediately after it's drawn
+     * @param shape The shape that was just drawn
+     * @param penProfile The pen profile used to create the shape
+     */
+    fun saveShapeImmediately(shape: Shape, penProfile: PenProfile) {
+        saveShapeToDatabase(shape, penProfile)
     }
 
     /**

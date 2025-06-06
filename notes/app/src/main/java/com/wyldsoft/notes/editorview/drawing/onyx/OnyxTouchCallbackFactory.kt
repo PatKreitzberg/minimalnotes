@@ -20,6 +20,7 @@ object OnyxTouchCallbackFactory {
      * @param databaseManager Manager for database operations
      * @param renderingManager Manager for rendering operations
      * @param navigationHandler Handler for navigation state
+     * @param activity The main activity for accessing pen profile and surface view
      * @return Configured touch callback
      */
     fun create(
@@ -27,24 +28,25 @@ object OnyxTouchCallbackFactory {
         eraserManager: OnyxEraserManager,
         databaseManager: OnyxDatabaseManager,
         renderingManager: OnyxRenderingManager,
-        navigationHandler: OnyxNavigationHandler
+        navigationHandler: OnyxNavigationHandler,
+        activity: OnyxDrawingActivity
     ): com.onyx.android.sdk.pen.RawInputCallback {
 
         return object : com.onyx.android.sdk.pen.RawInputCallback() {
 
             override fun onBeginRawDrawing(b: Boolean, touchPoint: TouchPoint?) {
                 if (eraserManager.isEraserModeEnabled()) {
-                    handleBeginErasing(touchPoint, eraserManager)
+                    handleBeginErasing(touchPoint, eraserManager, activity)
                 } else {
-                    handleBeginDrawing(touchPoint)
+                    handleBeginDrawing(touchPoint, activity)
                 }
             }
 
             override fun onEndRawDrawing(b: Boolean, touchPoint: TouchPoint?) {
                 if (eraserManager.isEraserModeEnabled()) {
-                    handleEndErasing(touchPoint, eraserManager, databaseManager, navigationHandler, renderingManager)
+                    handleEndErasing(touchPoint, eraserManager, databaseManager, navigationHandler, renderingManager, activity, shapeManager)
                 } else {
-                    handleEndDrawing(touchPoint, shapeManager, databaseManager, navigationHandler, renderingManager)
+                    handleEndDrawing(touchPoint, shapeManager, databaseManager, navigationHandler, renderingManager, activity)
                 }
             }
 
@@ -60,18 +62,18 @@ object OnyxTouchCallbackFactory {
                 if (eraserManager.isEraserModeEnabled()) {
                     handleEraserPathReceived(touchPointList, eraserManager)
                 } else {
-                    handleDrawingPathReceived(touchPointList, shapeManager, renderingManager)
+                    handleDrawingPathReceived(touchPointList, shapeManager, renderingManager, activity)
                 }
             }
 
             override fun onBeginRawErasing(b: Boolean, touchPoint: TouchPoint?) {
                 Log.d(TAG, "onBeginRawErasing called")
-                handleBeginErasing(touchPoint, eraserManager)
+                handleBeginErasing(touchPoint, eraserManager, activity)
             }
 
             override fun onEndRawErasing(b: Boolean, touchPoint: TouchPoint?) {
                 Log.d(TAG, "onEndRawErasing called")
-                handleEndErasing(touchPoint, eraserManager, databaseManager, navigationHandler, renderingManager)
+                handleEndErasing(touchPoint, eraserManager, databaseManager, navigationHandler, renderingManager, activity, shapeManager)
             }
 
             override fun onRawErasingTouchPointMoveReceived(touchPoint: TouchPoint?) {
@@ -88,8 +90,9 @@ object OnyxTouchCallbackFactory {
     /**
      * Handle beginning of drawing operation
      */
-    private fun handleBeginDrawing(touchPoint: TouchPoint?) {
+    private fun handleBeginDrawing(touchPoint: TouchPoint?, activity: OnyxDrawingActivity) {
         Log.d(TAG, "Beginning drawing operation")
+        activity.disableFingerTouch()
         EditorState.notifyDrawingStarted()
     }
 
@@ -101,25 +104,28 @@ object OnyxTouchCallbackFactory {
         shapeManager: OnyxShapeManager,
         databaseManager: OnyxDatabaseManager,
         navigationHandler: OnyxNavigationHandler,
-        renderingManager: OnyxRenderingManager
+        renderingManager: OnyxRenderingManager,
+        activity: OnyxDrawingActivity
     ) {
         Log.d(TAG, "Ending drawing operation")
+
+        activity.enableFingerTouch()
 
         // Save the new shape to database if we have a current note and shapes exist
         if (navigationHandler.hasCurrentNote() &&
             shapeManager.hasShapes() &&
             !databaseManager.isCurrentlyLoading()) {
 
-            // The newest shape is the last one added
             val allShapes = shapeManager.getAllShapes()
             if (allShapes.isNotEmpty()) {
-                // For now, we'll save all shapes - in a more sophisticated implementation,
-                // we could track which shape is the new one
-                databaseManager.saveCurrentState()
+                // Save the most recently added shape
+                val latestShape = allShapes.last()
+                databaseManager.saveShapeImmediately(latestShape, activity.currentPenProfile)
             }
         }
 
-        // Force screen refresh and notify drawing ended
+        // Force screen refresh
+        activity.forceScreenRefresh()
         EditorState.notifyDrawingEnded()
     }
 
@@ -129,22 +135,34 @@ object OnyxTouchCallbackFactory {
     private fun handleDrawingPathReceived(
         touchPointList: TouchPointList?,
         shapeManager: OnyxShapeManager,
-        renderingManager: OnyxRenderingManager
+        renderingManager: OnyxRenderingManager,
+        activity: OnyxDrawingActivity
     ) {
         touchPointList?.points?.let { points ->
             Log.d(TAG, "Drawing path received with ${points.size} points")
 
-            // This would need access to current pen profile - should be passed from activity
-            // For now, we'll let the activity handle the actual shape creation
-            // and just log the event
+            // Create shape from touch points using current pen profile
+            val shape = shapeManager.createShapeFromTouchPoints(touchPointList, activity.currentPenProfile)
+
+            // Add shape to manager
+            shapeManager.addShape(shape)
+
+            // Render shape to bitmap
+            renderingManager.renderShapeToBitmap(shape)
+
+            // Render to screen
+            activity.surfaceView?.let { sv ->
+                renderingManager.renderToScreen(sv, renderingManager.getCurrentBitmap())
+            }
         }
     }
 
     /**
      * Handle beginning of erasing operation
      */
-    private fun handleBeginErasing(touchPoint: TouchPoint?, eraserManager: OnyxEraserManager) {
+    private fun handleBeginErasing(touchPoint: TouchPoint?, eraserManager: OnyxEraserManager, activity: OnyxDrawingActivity) {
         Log.d(TAG, "Beginning erasing operation")
+        activity.disableFingerTouch()
         eraserManager.beginErasing(touchPoint)
     }
 
@@ -156,22 +174,24 @@ object OnyxTouchCallbackFactory {
         eraserManager: OnyxEraserManager,
         databaseManager: OnyxDatabaseManager,
         navigationHandler: OnyxNavigationHandler,
-        renderingManager: OnyxRenderingManager
+        renderingManager: OnyxRenderingManager,
+        activity: OnyxDrawingActivity,
+        shapeManager: OnyxShapeManager
     ) {
         Log.d(TAG, "Ending erasing operation")
 
-        // Get surface view from rendering manager if needed
-        val surfaceView: android.view.SurfaceView? = null // Would need to be passed in
-        eraserManager.endErasing(touchPoint, surfaceView)
+        activity.enableFingerTouch()
+
+        eraserManager.endErasing(touchPoint, activity.surfaceView)
 
         // Update database if we erased shapes and have a current note
         val erasingSession = eraserManager.getCurrentErasingSession()
         if (erasingSession.hasErasedShapes() && navigationHandler.hasCurrentNote()) {
-            navigationHandler.getCurrentNote()?.let { note ->
-                // The eraser manager should have already updated the shape manager,
-                // so we just need to save the current state
-                databaseManager.saveCurrentState()
-            }
+            // Save all remaining shapes to database
+            databaseManager.saveAllShapesToDatabase(
+                shapeManager.getAllShapes(),
+                activity.currentPenProfile
+            )
         }
     }
 

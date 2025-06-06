@@ -30,9 +30,9 @@ abstract class BaseDrawingActivity : ComponentActivity() {
     protected var paint = Paint()
     protected var bitmap: Bitmap? = null
     protected var bitmapCanvas: Canvas? = null
-    protected var surfaceView: SurfaceView? = null
+    open var surfaceView: SurfaceView? = null
     protected var isDrawingInProgress = false
-    protected var currentPenProfile = PenProfile.getDefaultProfile(PenType.BALLPEN)
+    var currentPenProfile = PenProfile.getDefaultProfile(PenType.BALLPEN)
 
     // Abstract methods that must be implemented by SDK-specific classes
     abstract fun initializeSDK()
@@ -100,7 +100,7 @@ abstract class BaseDrawingActivity : ComponentActivity() {
         Log.d(TAG, "Updated paint: color=${currentPenProfile.strokeColor}, width=${currentPenProfile.strokeWidth}")
     }
 
-    fun handleSurfaceViewCreated(sv: SurfaceView) {
+    open fun handleSurfaceViewCreated(sv: SurfaceView) {
         surfaceView = sv
         initializeTouchHelper(sv)
     }

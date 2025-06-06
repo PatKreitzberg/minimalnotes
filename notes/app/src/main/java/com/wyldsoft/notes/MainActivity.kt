@@ -12,6 +12,7 @@ import com.wyldsoft.notes.backend.database.DatabaseManager
 import com.wyldsoft.notes.navigation.AppView
 import com.wyldsoft.notes.navigation.NavigationManager
 import com.wyldsoft.notes.editorview.drawing.onyx.OnyxDrawingActivity
+import com.wyldsoft.notes.editorview.editor.EditorState.Companion.setEraserMode
 import com.wyldsoft.notes.ui.theme.MinimaleditorTheme
 import com.wyldsoft.notes.ui.views.HomeView
 import com.wyldsoft.notes.editorview.editor.EditorView
@@ -127,7 +128,7 @@ class MainActivity : OnyxDrawingActivity() {
     }
 
     // Method to handle eraser mode changes from toolbar
-    fun updateEraserMode(enabled: Boolean) {
+    override fun updateEraserMode(enabled: Boolean) {
         setEraserMode(enabled)
     }
 

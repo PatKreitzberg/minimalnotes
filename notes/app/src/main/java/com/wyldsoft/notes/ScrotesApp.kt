@@ -4,7 +4,7 @@ import android.app.Application
 import android.os.Build
 import com.onyx.android.sdk.rx.RxBaseAction
 import com.onyx.android.sdk.utils.ResManager
-import com.wyldsoft.notes.database.DatabaseManager
+import com.wyldsoft.notes.backend.database.DatabaseManager
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
 class ScrotesApp : Application() {

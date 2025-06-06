@@ -3,7 +3,7 @@ package com.wyldsoft.notes.utils
 import android.graphics.RectF
 import com.onyx.android.sdk.data.note.TouchPoint
 import com.onyx.android.sdk.pen.data.TouchPointList
-import com.wyldsoft.notes.shapepkg.Shape
+import com.wyldsoft.notes.editorview.drawing.shape.Shape
 
 /**
  * Utility class for eraser functionality including partial refresh optimization

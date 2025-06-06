@@ -2,6 +2,7 @@ package com.wyldsoft.notes.base
 
 import android.app.Application
 import android.content.Context
+import com.wyldsoft.notes.editorview.drawing.base.BaseDrawingActivity
 
 /**
  * Extension functions to help with the new architecture

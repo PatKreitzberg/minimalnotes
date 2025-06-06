@@ -10,6 +10,23 @@ import com.onyx.android.sdk.utils.DeviceReceiver;
 import com.onyx.android.sdk.utils.StringUtils;
 
 public class GlobalDeviceReceiver extends BroadcastReceiver {
+    /*
+      The GlobalDeviceReceiver is a system-level broadcast receiver that listens
+      for specific Android system events related to the device's UI state and screen activity.
+
+      Specifically watches for:
+       Notification Panel - When user pulls down the notification shade
+       Other System Dialogs - Any system-level UI overlays
+
+      For Onyx:
+      It tirggers the following in OnyxDrawingActivity which turns off drawing:
+        deviceReceiver.setSystemNotificationPanelChangeListener { open ->
+             onyxTouchHelper?.setRawDrawingEnabled(!open)
+             surfaceView?.let { sv ->
+                 renderToScreen(sv, bitmap)
+             }
+        }
+     */
 
     public static final String SYSTEM_UI_DIALOG_OPEN_ACTION = DeviceReceiver.SYSTEM_UI_DIALOG_OPEN_ACTION;
     public static final String SYSTEM_UI_DIALOG_CLOSE_ACTION = DeviceReceiver.SYSTEM_UI_DIALOG_CLOSE_ACTION;

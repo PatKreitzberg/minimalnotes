@@ -8,7 +8,7 @@ import android.view.SurfaceView;
 
 import androidx.annotation.Nullable;
 
-import com.wyldsoft.notes.shapepkg.Shape;
+import com.wyldsoft.notes.editorview.drawing.shape.Shape;
 import com.onyx.android.sdk.api.device.epd.EpdController;
 import com.onyx.android.sdk.utils.BitmapUtils;
 import com.onyx.android.sdk.utils.CanvasUtils;

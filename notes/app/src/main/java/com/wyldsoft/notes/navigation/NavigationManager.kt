@@ -3,9 +3,9 @@ package com.wyldsoft.notes.navigation
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.wyldsoft.notes.database.entities.Folder
-import com.wyldsoft.notes.database.entities.Notebook
-import com.wyldsoft.notes.database.entities.Note
+import com.wyldsoft.notes.backend.database.entities.Folder
+import com.wyldsoft.notes.backend.database.entities.Notebook
+import com.wyldsoft.notes.backend.database.entities.Note
 
 /**
  * Manages navigation state for the app

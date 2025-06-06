@@ -8,13 +8,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.wyldsoft.notes.database.DatabaseManager
+import com.wyldsoft.notes.backend.database.DatabaseManager
 import com.wyldsoft.notes.navigation.AppView
 import com.wyldsoft.notes.navigation.NavigationManager
-import com.wyldsoft.notes.onyx.OnyxDrawingActivity
+import com.wyldsoft.notes.editorview.drawing.onyx.OnyxDrawingActivity
 import com.wyldsoft.notes.ui.theme.MinimaleditorTheme
 import com.wyldsoft.notes.ui.views.HomeView
-import com.wyldsoft.notes.editor.EditorView
+import com.wyldsoft.notes.editorview.editor.EditorView
 import com.wyldsoft.notes.ui.viewmodels.HomeViewModel
 import com.wyldsoft.notes.ui.viewmodels.EditorViewModel
 

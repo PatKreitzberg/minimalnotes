@@ -9,7 +9,7 @@ import android.view.SurfaceView;
 
 import com.wyldsoft.notes.EraseArgs;
 import com.wyldsoft.notes.InteractiveMode;
-import com.wyldsoft.notes.shapepkg.Shape;
+import com.wyldsoft.notes.editorview.drawing.shape.Shape;
 import com.onyx.android.sdk.utils.BitmapUtils;
 
 import java.util.HashMap;

@@ -1,17 +1,15 @@
 package com.wyldsoft.notes.utils
 
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Rect
 import android.graphics.RectF
 import android.util.Log
 import android.view.SurfaceView
 import androidx.core.graphics.createBitmap
 import com.wyldsoft.notes.PartialRefreshRequest
 import com.wyldsoft.notes.render.RendererHelper
-import com.wyldsoft.notes.shapepkg.Shape
+import com.wyldsoft.notes.editorview.drawing.shape.Shape
 import com.onyx.android.sdk.rx.RxManager
 
 /**

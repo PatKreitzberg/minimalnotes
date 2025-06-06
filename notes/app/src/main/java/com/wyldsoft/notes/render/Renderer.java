@@ -3,7 +3,7 @@ package com.wyldsoft.notes.render;
 import android.graphics.Bitmap;
 import android.view.SurfaceView;
 
-import com.wyldsoft.notes.shapepkg.Shape;
+import com.wyldsoft.notes.editorview.drawing.shape.Shape;
 
 import java.util.List;
 

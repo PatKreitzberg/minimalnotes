@@ -5,7 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.view.SurfaceView;
 
-import com.wyldsoft.notes.shapepkg.Shape;
+import com.wyldsoft.notes.editorview.drawing.shape.Shape;
 
 import java.util.List;
 

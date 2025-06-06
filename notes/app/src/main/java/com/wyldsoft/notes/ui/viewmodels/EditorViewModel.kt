@@ -3,9 +3,9 @@ package com.wyldsoft.notes.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.wyldsoft.notes.database.repository.NotesRepository
-import com.wyldsoft.notes.database.entities.Note
-import com.wyldsoft.notes.database.entities.Notebook
+import com.wyldsoft.notes.backend.database.repository.NotesRepository
+import com.wyldsoft.notes.backend.database.entities.Note
+import com.wyldsoft.notes.backend.database.entities.Notebook
 import com.wyldsoft.notes.navigation.NavigationManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

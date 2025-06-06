@@ -27,8 +27,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.wyldsoft.notes.database.entities.Folder
-import com.wyldsoft.notes.database.entities.Notebook
+import com.wyldsoft.notes.backend.database.entities.Folder
+import com.wyldsoft.notes.backend.database.entities.Notebook
 import com.wyldsoft.notes.ui.viewmodels.HomeViewModel
 import com.wyldsoft.notes.ui.components.CreateFolderDialog
 import com.wyldsoft.notes.ui.components.CreateNotebookDialog

@@ -1,7 +1,7 @@
 package com.wyldsoft.notes.utils
 
 import android.graphics.RectF
-import com.wyldsoft.notes.shapepkg.Shape
+import com.wyldsoft.notes.editorview.drawing.shape.Shape
 import com.onyx.android.sdk.data.note.TouchPoint
 
 /**

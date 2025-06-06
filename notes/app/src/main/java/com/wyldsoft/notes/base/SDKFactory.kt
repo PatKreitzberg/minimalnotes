@@ -2,7 +2,8 @@ package com.wyldsoft.notes.base
 
 import android.content.Context
 import com.wyldsoft.notes.MainActivity
-import com.wyldsoft.notes.onyx.OnyxDrawingActivity
+import com.wyldsoft.notes.editorview.drawing.base.BaseDrawingActivity
+import com.wyldsoft.notes.editorview.drawing.onyx.OnyxDrawingActivity
 
 object SDKFactory {
 

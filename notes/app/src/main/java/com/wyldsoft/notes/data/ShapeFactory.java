@@ -2,12 +2,12 @@ package com.wyldsoft.notes.data;
 
 import android.util.Log;
 
-import com.wyldsoft.notes.shapepkg.BrushScribbleShape;
-import com.wyldsoft.notes.shapepkg.CharcoalScribbleShape;
-import com.wyldsoft.notes.shapepkg.MarkerScribbleShape;
-import com.wyldsoft.notes.shapepkg.NewBrushScribbleShape;
-import com.wyldsoft.notes.shapepkg.NormalPencilShape;
-import com.wyldsoft.notes.shapepkg.Shape;
+import com.wyldsoft.notes.editorview.drawing.shape.BrushScribbleShape;
+import com.wyldsoft.notes.editorview.drawing.shape.CharcoalScribbleShape;
+import com.wyldsoft.notes.editorview.drawing.shape.MarkerScribbleShape;
+import com.wyldsoft.notes.editorview.drawing.shape.NewBrushScribbleShape;
+import com.wyldsoft.notes.editorview.drawing.shape.NormalPencilShape;
+import com.wyldsoft.notes.editorview.drawing.shape.Shape;
 import com.onyx.android.sdk.data.note.PenTexture;
 import com.onyx.android.sdk.pen.NeoPenConfig;
 import com.onyx.android.sdk.pen.TouchHelper;

@@ -9,7 +9,7 @@ import android.view.SurfaceView
 import androidx.core.graphics.createBitmap
 import com.wyldsoft.notes.render.RendererHelper
 import com.wyldsoft.notes.render.RendererToScreenRequest
-import com.wyldsoft.notes.editorview.drawing.shape.Shape
+import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
 import com.onyx.android.sdk.rx.RxManager
 
 /**
@@ -82,7 +82,7 @@ class OnyxRenderingManager {
      * Render a single shape to the current bitmap
      * @param shape Shape to render
      */
-    fun renderShapeToBitmap(shape: Shape) {
+    fun renderShapeToBitmap(shape: DrawingShape) {
         currentBitmap?.let { bitmap ->
             val renderContext = getRendererHelper().getRenderContext()
 
@@ -101,7 +101,7 @@ class OnyxRenderingManager {
      * Recreate the entire bitmap from a collection of shapes
      * @param shapes Collection of shapes to render
      */
-    fun recreateBitmapFromShapes(shapes: List<Shape>) {
+    fun recreateBitmapFromShapes(shapes: List<DrawingShape>) {
         // Ensure we have a bitmap to work with
         if (currentBitmap == null) {
             Log.w(TAG, "No bitmap available for recreating from shapes")
@@ -135,7 +135,7 @@ class OnyxRenderingManager {
      * @param shapes Collection of shapes to render
      * @param surfaceView SurfaceView for bitmap dimensions
      */
-    fun recreateBitmapFromShapes(shapes: List<Shape>, surfaceView: SurfaceView?) {
+    fun recreateBitmapFromShapes(shapes: List<DrawingShape>, surfaceView: SurfaceView?) {
         surfaceView?.let { sv ->
             // Ensure bitmap is created/updated for current surface
             createOrGetDrawingBitmap(sv)
@@ -223,7 +223,7 @@ class OnyxRenderingManager {
      * @param surfaceView SurfaceView to refresh
      * @param allShapes All shapes to render during refresh
      */
-    fun forceScreenRefresh(surfaceView: SurfaceView?, allShapes: List<Shape>) {
+    fun forceScreenRefresh(surfaceView: SurfaceView?, allShapes: List<DrawingShape>) {
         Log.d(TAG, "Forcing complete screen refresh")
 
         surfaceView?.let { sv ->

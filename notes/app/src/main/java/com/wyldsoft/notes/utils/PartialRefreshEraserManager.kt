@@ -9,7 +9,7 @@ import android.view.SurfaceView
 import androidx.core.graphics.createBitmap
 import com.wyldsoft.notes.PartialRefreshRequest
 import com.wyldsoft.notes.render.RendererHelper
-import com.wyldsoft.notes.editorview.drawing.shape.Shape
+import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
 import com.onyx.android.sdk.rx.RxManager
 
 /**
@@ -35,7 +35,7 @@ class PartialRefreshEraserManager(
     fun performPartialRefresh(
         surfaceView: SurfaceView?,
         refreshBounds: RectF,
-        allShapes: List<Shape>
+        allShapes: List<DrawingShape>
     ) {
         surfaceView ?: return
 
@@ -116,7 +116,7 @@ class PartialRefreshEraserManager(
     /**
      * Fallback to full screen refresh when partial refresh is not suitable
      */
-    private fun performFullRefresh(surfaceView: SurfaceView, allShapes: List<Shape>) {
+    private fun performFullRefresh(surfaceView: SurfaceView, allShapes: List<DrawingShape>) {
         Log.d(TAG, "Performing full screen refresh")
 
         try {
@@ -154,7 +154,7 @@ class PartialRefreshEraserManager(
     /**
      * Filter shapes that intersect with the refresh bounds
      */
-    private fun filterShapesInBounds(shapes: List<Shape>, bounds: RectF): List<Shape> {
+    private fun filterShapesInBounds(shapes: List<DrawingShape>, bounds: RectF): List<DrawingShape> {
         return shapes.filter { shape ->
             shape.updateShapeRect()
             shape.boundingRect?.let { shapeBounds ->
@@ -167,7 +167,7 @@ class PartialRefreshEraserManager(
      * Render shapes with appropriate offset for the refresh area
      */
     private fun renderShapesWithOffset(
-        shapes: List<Shape>,
+        shapes: List<DrawingShape>,
         renderContext: RendererHelper.RenderContext,
         refreshBounds: RectF
     ) {
@@ -197,7 +197,7 @@ class PartialRefreshEraserManager(
      * Calculate refresh bounds from multiple sources (erased shapes + eraser path)
      */
     fun calculateCombinedRefreshBounds(
-        erasedShapes: Set<Shape>,
+        erasedShapes: Set<DrawingShape>,
         eraserPath: List<com.onyx.android.sdk.data.note.TouchPoint>?,
         eraserRadius: Float = 20f
     ): RectF {

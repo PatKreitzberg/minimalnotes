@@ -13,7 +13,7 @@ import com.onyx.android.sdk.pen.data.TouchPointList;
 
 import java.util.List;
 
-public class Shape {
+public class DrawingShape {
     public int shapeType;
     public int texture;
     protected int strokeColor;
@@ -25,10 +25,10 @@ public class Shape {
     protected RectF boundingRect;
     protected RectF originRect;
 
-    public Shape() {
+    public DrawingShape() {
     }
 
-    public Shape(TouchPointList touchPointList) {
+    public DrawingShape(TouchPointList touchPointList) {
         this.touchPointList = touchPointList;
     }
 
@@ -40,27 +40,27 @@ public class Shape {
         return transparent;
     }
 
-    public Shape setShapeType(int shapeType) {
+    public DrawingShape setShapeType(int shapeType) {
         this.shapeType = shapeType;
         return this;
     }
 
-    public Shape setTexture(int texture) {
+    public DrawingShape setTexture(int texture) {
         this.texture = texture;
         return this;
     }
 
-    public Shape setStrokeColor(int strokeColor) {
+    public DrawingShape setStrokeColor(int strokeColor) {
         this.strokeColor = strokeColor;
         return this;
     }
 
-    public Shape setStrokeWidth(float strokeWidth) {
+    public DrawingShape setStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
         return this;
     }
 
-    public Shape setTouchPointList(TouchPointList touchPointList) {
+    public DrawingShape setTouchPointList(TouchPointList touchPointList) {
         this.touchPointList = touchPointList;
         return this;
     }

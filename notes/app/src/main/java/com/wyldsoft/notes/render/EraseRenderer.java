@@ -11,7 +11,7 @@ import android.view.SurfaceView;
 import com.onyx.android.sdk.data.note.TouchPoint;
 import com.onyx.android.sdk.pen.data.TouchPointList;
 import com.wyldsoft.notes.EraseArgs;
-import com.wyldsoft.notes.editorview.drawing.shape.Shape;
+import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape;
 
 import java.util.Iterator;
 import java.util.List;
@@ -72,8 +72,8 @@ public class EraseRenderer extends BaseRenderer {
     }
 
     @Override
-    public void renderToBitmap(List<Shape> shapes, RendererHelper.RenderContext renderContext) {
-        for (Shape shape : shapes) {
+    public void renderToBitmap(List<DrawingShape> shapes, RendererHelper.RenderContext renderContext) {
+        for (DrawingShape shape : shapes) {
             shape.render(renderContext);
         }
     }

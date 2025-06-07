@@ -5,7 +5,7 @@ import androidx.lifecycle.lifecycleScope
 import com.wyldsoft.notes.backend.database.DatabaseManager
 import com.wyldsoft.notes.backend.database.ShapeUtils
 import com.wyldsoft.notes.backend.database.entities.Note
-import com.wyldsoft.notes.editorview.drawing.shape.Shape
+import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
 import com.wyldsoft.notes.pen.PenProfile
 import kotlinx.coroutines.launch
 
@@ -88,7 +88,7 @@ class OnyxDatabaseManager(
      * @param shape The shape to save
      * @param penProfile The pen profile used to create the shape
      */
-    fun saveShapeToDatabase(shape: Shape, penProfile: PenProfile) {
+    fun saveShapeToDatabase(shape: DrawingShape, penProfile: PenProfile) {
         if (isLoadingFromDatabase) {
             Log.d(TAG, "Skipping save while loading from database")
             return
@@ -112,7 +112,7 @@ class OnyxDatabaseManager(
      * @param allShapes List of all current shapes
      * @param penProfile Current pen profile
      */
-    fun saveAllShapesToDatabase(allShapes: List<Shape>, penProfile: PenProfile) {
+    fun saveAllShapesToDatabase(allShapes: List<DrawingShape>, penProfile: PenProfile) {
         if (isLoadingFromDatabase) {
             Log.d(TAG, "Skipping save while loading from database")
             return
@@ -145,7 +145,7 @@ class OnyxDatabaseManager(
      * @param remainingShapes The shapes that remain after erasing
      * @param penProfile Current pen profile
      */
-    fun updateDatabaseAfterErasing(remainingShapes: List<Shape>, penProfile: PenProfile) {
+    fun updateDatabaseAfterErasing(remainingShapes: List<DrawingShape>, penProfile: PenProfile) {
         if (isLoadingFromDatabase) {
             Log.d(TAG, "Skipping database update while loading from database")
             return
@@ -201,7 +201,7 @@ class OnyxDatabaseManager(
      * @param shape The shape that was just drawn
      * @param penProfile The pen profile used to create the shape
      */
-    fun saveShapeImmediately(shape: Shape, penProfile: PenProfile) {
+    fun saveShapeImmediately(shape: DrawingShape, penProfile: PenProfile) {
         saveShapeToDatabase(shape, penProfile)
     }
 

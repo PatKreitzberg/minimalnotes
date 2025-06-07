@@ -9,7 +9,7 @@ import android.view.SurfaceView;
 
 import com.wyldsoft.notes.EraseArgs;
 import com.wyldsoft.notes.InteractiveMode;
-import com.wyldsoft.notes.editorview.drawing.shape.Shape;
+import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape;
 import com.onyx.android.sdk.utils.BitmapUtils;
 
 import java.util.HashMap;
@@ -72,7 +72,7 @@ public class RendererHelper {
         getRenderer(scribbleMode).renderToBitmap(surfaceView, renderContext);
     }
 
-    public void renderToBitmap(InteractiveMode scribbleMode, List<Shape> shapes) {
+    public void renderToBitmap(InteractiveMode scribbleMode, List<DrawingShape> shapes) {
         getRenderer(scribbleMode).renderToBitmap(shapes, getRenderContext());
     }
 

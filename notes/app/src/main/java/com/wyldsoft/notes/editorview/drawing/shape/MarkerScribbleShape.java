@@ -7,7 +7,7 @@ import com.wyldsoft.notes.render.RendererHelper;
 import android.util.Log;
 import java.util.List;
 
-public class MarkerScribbleShape extends Shape {
+public class MarkerScribbleShape extends DrawingShape {
 
     @Override
     public void render(RendererHelper.RenderContext renderContext) {

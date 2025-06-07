@@ -3,7 +3,7 @@ package com.wyldsoft.notes.utils
 import android.graphics.RectF
 import com.onyx.android.sdk.data.note.TouchPoint
 import com.onyx.android.sdk.pen.data.TouchPointList
-import com.wyldsoft.notes.editorview.drawing.shape.Shape
+import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
 
 /**
  * Utility class for eraser functionality including partial refresh optimization
@@ -19,13 +19,13 @@ object EraserUtils {
      * Data class to hold erasing session information including affected screen area
      */
     data class ErasingSession(
-        val erasedShapes: MutableSet<Shape> = mutableSetOf(),
+        val erasedShapes: MutableSet<DrawingShape> = mutableSetOf(),
         val affectedBounds: RectF = RectF()
     ) {
         /**
          * Add a shape to the erasing session and update affected bounds
          */
-        fun addErasedShape(shape: Shape) {
+        fun addErasedShape(shape: DrawingShape) {
             erasedShapes.add(shape)
 
             // Update bounding rectangle of the shape if it exists
@@ -71,9 +71,9 @@ object EraserUtils {
      */
     fun findShapesToEraseAtPoint(
         point: TouchPoint,
-        availableShapes: List<Shape>,
+        availableShapes: List<DrawingShape>,
         eraserRadius: Float = DEFAULT_ERASER_RADIUS
-    ): List<Shape> {
+    ): List<DrawingShape> {
         val pointList = TouchPointList().apply { add(point) }
         return availableShapes.filter { shape ->
             shape.hitTestPoints(pointList, eraserRadius)
@@ -89,9 +89,9 @@ object EraserUtils {
      */
     fun findShapesToErase(
         eraserPath: TouchPointList,
-        availableShapes: List<Shape>,
+        availableShapes: List<DrawingShape>,
         eraserRadius: Float = DEFAULT_ERASER_RADIUS
-    ): List<Shape> {
+    ): List<DrawingShape> {
         return availableShapes.filter { shape ->
             shape.hitTestPoints(eraserPath, eraserRadius)
         }
@@ -102,7 +102,7 @@ object EraserUtils {
      * @param shapes Collection of shapes to calculate bounds for
      * @return RectF containing all shapes, or empty rect if no shapes
      */
-    fun calculateShapesBounds(shapes: Collection<Shape>): RectF {
+    fun calculateShapesBounds(shapes: Collection<DrawingShape>): RectF {
         val bounds = RectF()
 
         shapes.forEach { shape ->

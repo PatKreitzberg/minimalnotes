@@ -13,7 +13,7 @@ import com.onyx.android.sdk.pen.PenRenderArgs;
 
 import java.util.List;
 
-public class CharcoalScribbleShape extends Shape {
+public class CharcoalScribbleShape extends DrawingShape {
 
     @Override
     public void render(RendererHelper.RenderContext renderContext) {

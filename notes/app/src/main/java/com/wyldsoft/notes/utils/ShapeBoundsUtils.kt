@@ -1,7 +1,7 @@
 package com.wyldsoft.notes.utils
 
 import android.graphics.RectF
-import com.wyldsoft.notes.editorview.drawing.shape.Shape
+import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
 import com.onyx.android.sdk.data.note.TouchPoint
 
 /**
@@ -17,7 +17,7 @@ object ShapeBoundsUtils {
      * @param shape The shape to calculate bounds for
      * @return RectF containing the shape bounds including stroke padding
      */
-    fun calculateShapeBoundsWithStroke(shape: Shape): RectF {
+    fun calculateShapeBoundsWithStroke(shape: DrawingShape): RectF {
         // Ensure the shape has updated its bounding rectangle
         shape.updateShapeRect()
 
@@ -42,7 +42,7 @@ object ShapeBoundsUtils {
      * Calculate bounding rectangle directly from touch points
      * Useful when shape.boundingRect is null or inaccurate
      */
-    private fun calculateBoundsFromTouchPoints(shape: Shape): RectF {
+    private fun calculateBoundsFromTouchPoints(shape: DrawingShape): RectF {
         val touchPoints = shape.touchPointList?.points ?: return RectF()
 
         if (touchPoints.isEmpty()) {
@@ -69,7 +69,7 @@ object ShapeBoundsUtils {
      * @param shapes Collection of shapes to combine
      * @return RectF containing all shapes with stroke padding
      */
-    fun calculateCombinedBounds(shapes: Collection<Shape>): RectF {
+    fun calculateCombinedBounds(shapes: Collection<DrawingShape>): RectF {
         if (shapes.isEmpty()) {
             return RectF()
         }

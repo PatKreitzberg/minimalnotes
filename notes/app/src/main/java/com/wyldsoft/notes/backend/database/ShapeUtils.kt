@@ -2,7 +2,7 @@ package com.wyldsoft.notes.backend.database
 
 import com.wyldsoft.notes.backend.database.entities.Shape as DatabaseShape
 import com.wyldsoft.notes.backend.database.entities.StoredPenProfile
-import com.wyldsoft.notes.editorview.drawing.shape.Shape as DrawingShape
+import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
 import com.wyldsoft.notes.pen.PenProfile
 import com.wyldsoft.notes.pen.PenType
 import com.wyldsoft.notes.data.ShapeFactory

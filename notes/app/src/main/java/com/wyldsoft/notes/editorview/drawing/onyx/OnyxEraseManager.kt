@@ -164,7 +164,7 @@ class OnyxEraserManager(
      * Immediately erase shapes and update the session
      * @param shapesToErase Collection of shapes to erase
      */
-    private fun eraseShapesImmediately(shapesToErase: Collection<com.wyldsoft.notes.editorview.drawing.shape.Shape>) {
+    private fun eraseShapesImmediately(shapesToErase: Collection<com.wyldsoft.notes.editorview.drawing.shape.DrawingShape>) {
         // Remove shapes from shape manager
         shapeManager.removeShapes(shapesToErase)
 

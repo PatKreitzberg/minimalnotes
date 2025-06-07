@@ -9,7 +9,7 @@ import com.onyx.android.sdk.pen.PenUtils;
 import java.util.List;
 import android.util.Log;
 
-public class NewBrushScribbleShape extends Shape {
+public class NewBrushScribbleShape extends DrawingShape {
 
     @Override
     public void render(RendererHelper.RenderContext renderContext) {

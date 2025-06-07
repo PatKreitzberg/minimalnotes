@@ -11,7 +11,7 @@ import com.wyldsoft.notes.render.RendererHelper;
 
 import java.util.List;
 
-public class BrushScribbleShape extends Shape {
+public class BrushScribbleShape extends DrawingShape {
 
     @Override
     public void render(RendererHelper.RenderContext renderContext) {

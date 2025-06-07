@@ -3,7 +3,7 @@ package com.wyldsoft.notes.editorview.drawing.onyx
 import android.util.Log
 import com.onyx.android.sdk.data.note.TouchPoint
 import com.onyx.android.sdk.pen.data.TouchPointList
-import com.wyldsoft.notes.editorview.drawing.shape.Shape
+import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
 import com.wyldsoft.notes.pen.PenProfile
 import com.wyldsoft.notes.pen.PenType
 import com.wyldsoft.notes.data.ShapeFactory
@@ -21,7 +21,7 @@ class OnyxShapeManager(
     }
 
     // Store all drawn shapes for re-rendering and erasing
-    private val drawnShapes = mutableListOf<Shape>()
+    private val drawnShapes = mutableListOf<DrawingShape>()
 
     /**
      * Create a new shape from touch points and current pen profile
@@ -32,7 +32,7 @@ class OnyxShapeManager(
     fun createShapeFromTouchPoints(
         touchPointList: TouchPointList,
         penProfile: PenProfile
-    ): Shape {
+    ): DrawingShape {
         val shapeType = mapPenTypeToShapeType(penProfile.penType)
         val shape = ShapeFactory.createShape(shapeType)
 
@@ -45,7 +45,7 @@ class OnyxShapeManager(
      * Add a shape to the drawn shapes collection
      * @param shape The shape to add
      */
-    fun addShape(shape: Shape) {
+    fun addShape(shape: DrawingShape) {
         drawnShapes.add(shape)
         Log.d(TAG, "Added shape, total shapes: ${drawnShapes.size}")
     }
@@ -55,7 +55,7 @@ class OnyxShapeManager(
      * @param shapesToRemove Collection of shapes to remove
      * @return Number of shapes actually removed
      */
-    fun removeShapes(shapesToRemove: Collection<Shape>): Int {
+    fun removeShapes(shapesToRemove: Collection<DrawingShape>): Int {
         val initialSize = drawnShapes.size
         drawnShapes.removeAll(shapesToRemove.toSet())
         val removedCount = initialSize - drawnShapes.size
@@ -68,7 +68,7 @@ class OnyxShapeManager(
      * Get all currently drawn shapes
      * @return Read-only list of all shapes
      */
-    fun getAllShapes(): List<Shape> = drawnShapes.toList()
+    fun getAllShapes(): List<DrawingShape> = drawnShapes.toList()
 
     /**
      * Clear all drawn shapes
@@ -83,7 +83,7 @@ class OnyxShapeManager(
      * Replace all shapes with a new collection (used when loading from database)
      * @param newShapes The shapes to replace current collection with
      */
-    fun replaceAllShapes(newShapes: List<Shape>) {
+    fun replaceAllShapes(newShapes: List<DrawingShape>) {
         drawnShapes.clear()
         drawnShapes.addAll(newShapes)
         Log.d(TAG, "Replaced all shapes with ${newShapes.size} shapes")
@@ -105,7 +105,7 @@ class OnyxShapeManager(
      * Render a specific shape to the current bitmap
      * @param shape The shape to render
      */
-    fun renderShape(shape: Shape) {
+    fun renderShape(shape: DrawingShape) {
         renderingManager.renderShapeToBitmap(shape)
     }
 
@@ -141,7 +141,7 @@ class OnyxShapeManager(
      * Configure a shape with the provided parameters
      */
     private fun configureShape(
-        shape: Shape,
+        shape: DrawingShape,
         touchPointList: TouchPointList,
         penProfile: PenProfile,
         shapeType: Int
@@ -174,7 +174,7 @@ class OnyxShapeManager(
     fun getShapesIntersectingWithPoints(
         touchPoints: TouchPointList,
         radius: Float = 20f
-    ): List<Shape> {
+    ): List<DrawingShape> {
         return drawnShapes.filter { shape ->
             shape.hitTestPoints(touchPoints, radius)
         }
@@ -185,5 +185,5 @@ class OnyxShapeManager(
      * This creates a copy to avoid concurrent modification during erasing
      * @return Snapshot list of current shapes
      */
-    fun getShapesSnapshot(): List<Shape> = drawnShapes.toList()
+    fun getShapesSnapshot(): List<DrawingShape> = drawnShapes.toList()
 }

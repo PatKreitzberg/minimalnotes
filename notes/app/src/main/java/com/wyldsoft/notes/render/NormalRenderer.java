@@ -5,15 +5,15 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.view.SurfaceView;
 
-import com.wyldsoft.notes.editorview.drawing.shape.Shape;
+import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape;
 
 import java.util.List;
 
 public class NormalRenderer extends BaseRenderer {
 
     @Override
-    public void renderToBitmap(List<Shape> shapes, RendererHelper.RenderContext renderContext) {
-        for (Shape shape : shapes) {
+    public void renderToBitmap(List<DrawingShape> shapes, RendererHelper.RenderContext renderContext) {
+        for (DrawingShape shape : shapes) {
             shape.render(renderContext);
         }
     }

@@ -29,6 +29,12 @@ class ViewportController(
     interface ViewportChangeListener {
         fun onViewportChanged(viewport: RectF, zoomLevel: Float)
         fun onVisibleShapesChanged(visibleShapes: List<DrawingShape>)
+        
+        /**
+         * Called when viewport transformation requires a full screen refresh
+         * This ensures shapes are properly positioned after zoom/scroll changes
+         */
+        fun onViewportRefreshRequired()
     }
 
     /**
@@ -209,7 +215,10 @@ class ViewportController(
         
         viewportChangeListeners.forEach { listener ->
             listener.onViewportChanged(viewport, zoomLevel)
+            listener.onViewportRefreshRequired()
         }
+        
+        Log.d(TAG, "Notified ${viewportChangeListeners.size} listeners of viewport change and refresh requirement")
     }
 
     /**

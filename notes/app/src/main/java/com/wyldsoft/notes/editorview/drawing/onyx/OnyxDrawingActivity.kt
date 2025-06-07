@@ -38,6 +38,10 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
     private lateinit var renderingManager: OnyxRenderingManager
     private lateinit var navigationHandler: OnyxNavigationHandler
 
+    // Viewport management
+    private var currentViewportController: com.wyldsoft.notes.editorview.viewport.ViewportController? = null
+    private var viewportChangeListener: com.wyldsoft.notes.editorview.viewport.ViewportController.ViewportChangeListener? = null
+
     // Public access to surface view and pen profile for managers
     override var surfaceView: SurfaceView? = null
 
@@ -122,6 +126,14 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         onyxTouchHelper?.closeRawDrawing()
         databaseManager.saveAllShapesToDatabase(shapeManager.getAllShapes(), currentPenProfile)
         shapeManager.clearShapes()
+        
+        // Clean up viewport listener
+        currentViewportController?.let { controller ->
+            viewportChangeListener?.let { listener ->
+                controller.removeViewportChangeListener(listener)
+                Log.d(TAG, "Cleaned up viewport change listener")
+            }
+        }
     }
 
     override fun updateActiveSurface() {
@@ -260,9 +272,42 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
      * Set the viewport controller for rendering transformations
      */
     fun setViewportController(controller: com.wyldsoft.notes.editorview.viewport.ViewportController?) {
+        // Remove previous listener if exists
+        currentViewportController?.let { oldController ->
+            viewportChangeListener?.let { listener ->
+                oldController.removeViewportChangeListener(listener)
+                Log.d(TAG, "Removed previous viewport change listener")
+            }
+        }
+        
+        // Update managers with new controller
         renderingManager.setViewportController(controller)
         shapeManager.setViewportController(controller)
         eraserManager.setViewportController(controller)
+        
+        // Set up new viewport change listener for automatic refresh
+        controller?.let { viewportController ->
+            val listener = object : com.wyldsoft.notes.editorview.viewport.ViewportController.ViewportChangeListener {
+                override fun onViewportChanged(viewport: android.graphics.RectF, zoomLevel: Float) {
+                    Log.d(TAG, "Viewport changed - zoom: ${(zoomLevel * 100).toInt()}%, bounds: $viewport")
+                }
+                
+                override fun onVisibleShapesChanged(visibleShapes: List<com.wyldsoft.notes.editorview.drawing.shape.DrawingShape>) {
+                    Log.d(TAG, "Visible shapes changed: ${visibleShapes.size} shapes")
+                }
+                
+                override fun onViewportRefreshRequired() {
+                    Log.d(TAG, "Viewport refresh required - forcing full screen refresh")
+                    forceScreenRefresh()
+                }
+            }
+            
+            viewportController.addViewportChangeListener(listener)
+            viewportChangeListener = listener
+            Log.d(TAG, "Registered viewport change listener for automatic refresh")
+        }
+        
+        currentViewportController = controller
     }
 
     fun clearDrawing() {

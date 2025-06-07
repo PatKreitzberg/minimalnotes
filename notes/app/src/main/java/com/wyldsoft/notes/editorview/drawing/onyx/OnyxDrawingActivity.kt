@@ -2,6 +2,7 @@ package com.wyldsoft.notes.editorview.drawing.onyx
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import android.graphics.RectF
 import android.util.Log
 import android.view.SurfaceView
 import androidx.lifecycle.lifecycleScope
@@ -13,6 +14,7 @@ import com.wyldsoft.notes.base.BaseDeviceReceiver
 import com.wyldsoft.notes.editorview.drawing.base.BaseDrawingActivity
 import com.wyldsoft.notes.editorview.drawing.base.BaseTouchHelper
 import com.wyldsoft.notes.backend.database.entities.Note
+import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
 import kotlinx.coroutines.launch
 
 /**

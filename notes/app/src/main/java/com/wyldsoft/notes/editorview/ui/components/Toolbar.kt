@@ -13,9 +13,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wyldsoft.notes.ExcludeRects
@@ -33,7 +35,15 @@ import com.wyldsoft.notes.pen.PenProfile
 fun UpdatedToolbar(
     editorState: EditorState,
     onPenProfileChanged: (PenProfile) -> Unit = {},
-    onEraserModeChanged: (Boolean) -> Unit = {}
+    onEraserModeChanged: (Boolean) -> Unit = {},
+    onScrollUp: () -> Unit = {},
+    onScrollDown: () -> Unit = {},
+    onScrollLeft: () -> Unit = {},
+    onScrollRight: () -> Unit = {},
+    onZoomIn: () -> Unit = {},
+    onZoomOut: () -> Unit = {},
+    canZoomIn: Boolean = true,
+    canZoomOut: Boolean = true
 ) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -189,27 +199,89 @@ fun UpdatedToolbar(
                 .background(Color.White)
                 .border(1.dp, Color.Gray)
                 .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp), // Reduced spacing
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Tools:", color = Color.Black, fontSize = 12.sp)
 
-            // 5 Profile buttons
+            // 5 Profile buttons (20% smaller)
             profiles.forEachIndexed { index, profile ->
                 ProfileButton(
                     profile = profile,
                     isSelected = selectedProfileIndex == index && !eraserModeEnabled,
-                    onClick = { handleProfileClick(index) }
+                    onClick = { handleProfileClick(index) },
+                    size = 38.dp, // 20% smaller than 48dp
+                    iconSize = 19.dp // 20% smaller than 24dp
                 )
             }
 
             // Vertical divider line
             VerticalDivider()
 
-            // Eraser button
+            // Eraser button (20% smaller)
             EraserButton(
                 isSelected = eraserModeEnabled,
-                onClick = { handleEraserClick() }
+                onClick = { handleEraserClick() },
+                size = 38.dp,
+                iconSize = 19.dp
+            )
+
+            // Vertical divider line
+            VerticalDivider()
+
+            // Navigation buttons
+            NavigationButton(
+                icon = NavigationIcons.ArrowUp,
+                contentDescription = "Scroll Up",
+                onClick = onScrollUp,
+                size = 38.dp,
+                iconSize = 19.dp
+            )
+
+            NavigationButton(
+                icon = NavigationIcons.ArrowDown,
+                contentDescription = "Scroll Down",
+                onClick = onScrollDown,
+                size = 38.dp,
+                iconSize = 19.dp
+            )
+
+            NavigationButton(
+                icon = NavigationIcons.ArrowLeft,
+                contentDescription = "Scroll Left",
+                onClick = onScrollLeft,
+                size = 38.dp,
+                iconSize = 19.dp
+            )
+
+            NavigationButton(
+                icon = NavigationIcons.ArrowRight,
+                contentDescription = "Scroll Right",
+                onClick = onScrollRight,
+                size = 38.dp,
+                iconSize = 19.dp
+            )
+
+            // Vertical divider line
+            VerticalDivider()
+
+            // Zoom buttons
+            NavigationButton(
+                icon = NavigationIcons.ZoomIn,
+                contentDescription = "Zoom In",
+                onClick = onZoomIn,
+                enabled = canZoomIn,
+                size = 38.dp,
+                iconSize = 19.dp
+            )
+
+            NavigationButton(
+                icon = NavigationIcons.ZoomOut,
+                contentDescription = "Zoom Out",
+                onClick = onZoomOut,
+                enabled = canZoomOut,
+                size = 38.dp,
+                iconSize = 19.dp
             )
         }
 
@@ -261,7 +333,9 @@ fun UpdatedToolbar(
 fun ProfileButton(
     profile: PenProfile,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    size: Dp = 48.dp,
+    iconSize: Dp = 24.dp
 ) {
     Button(
         onClick = onClick,
@@ -273,13 +347,13 @@ fun ProfileButton(
             width = if (isSelected) 2.dp else 1.dp,
             color = if (isSelected) Color.Black else Color.Gray
         ),
-        modifier = Modifier.size(48.dp),
+        modifier = Modifier.size(size),
         contentPadding = PaddingValues(4.dp)
     ) {
         Icon(
             imageVector = PenIconUtils.getIconForPenType(profile.penType),
             contentDescription = PenIconUtils.getContentDescriptionForPenType(profile.penType),
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(iconSize)
         )
     }
 }
@@ -297,7 +371,9 @@ private fun VerticalDivider() {
 @Composable
 fun EraserButton(
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    size: Dp = 48.dp,
+    iconSize: Dp = 24.dp
 ) {
     Button(
         onClick = onClick,
@@ -309,13 +385,46 @@ fun EraserButton(
             width = if (isSelected) 2.dp else 1.dp,
             color = if (isSelected) Color.Red else Color.Gray
         ),
-        modifier = Modifier.size(48.dp),
+        modifier = Modifier.size(size),
         contentPadding = PaddingValues(4.dp)
     ) {
         Icon(
             imageVector = Icons.Default.Clear,
             contentDescription = "Eraser",
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(iconSize)
+        )
+    }
+}
+
+@Composable
+fun NavigationButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    size: Dp = 48.dp,
+    iconSize: Dp = 24.dp
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            contentColor = Color.Black,
+            disabledContainerColor = Color.Transparent,
+            disabledContentColor = Color.Gray
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (enabled) Color.Gray else Color.LightGray
+        ),
+        modifier = Modifier.size(size),
+        contentPadding = PaddingValues(4.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(iconSize)
         )
     }
 }

@@ -40,6 +40,12 @@ data class Shape(
     // Pen profile data used when creating this shape
     val penProfileData: StoredPenProfile,
 
+    // Bounding box for efficient visibility calculations
+    val boundingMinX: Float,
+    val boundingMinY: Float,
+    val boundingMaxX: Float,
+    val boundingMaxY: Float,
+
     // Timestamps
     val createdAt: Long = System.currentTimeMillis()
 )

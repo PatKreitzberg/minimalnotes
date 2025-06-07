@@ -24,7 +24,15 @@ fun EditorView(
     onSurfaceViewCreated: (android.view.SurfaceView) -> Unit = {},
     onPenProfileChanged: (PenProfile) -> Unit = {},
     onEraserModeChanged: (Boolean) -> Unit = {},
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onScrollUp: () -> Unit = {},
+    onScrollDown: () -> Unit = {},
+    onScrollLeft: () -> Unit = {},
+    onScrollRight: () -> Unit = {},
+    onZoomIn: () -> Unit = {},
+    onZoomOut: () -> Unit = {},
+    canZoomIn: Boolean = true,
+    canZoomOut: Boolean = true
 ) {
     val editorState = remember { EditorState() }
     val currentNote by viewModel.currentNote.collectAsState()
@@ -98,7 +106,15 @@ fun EditorView(
                 CleanToolbar(
                     editorState = editorState,
                     onPenProfileChanged = onPenProfileChanged,
-                    onEraserModeChanged = onEraserModeChanged
+                    onEraserModeChanged = onEraserModeChanged,
+                    onScrollUp = onScrollUp,
+                    onScrollDown = onScrollDown,
+                    onScrollLeft = onScrollLeft,
+                    onScrollRight = onScrollRight,
+                    onZoomIn = onZoomIn,
+                    onZoomOut = onZoomOut,
+                    canZoomIn = canZoomIn,
+                    canZoomOut = canZoomOut
                 )
 
                 Spacer(modifier = Modifier.height(1.dp)) // Reduced spacing
@@ -125,11 +141,27 @@ fun EditorView(
 private fun CleanToolbar(
     editorState: EditorState,
     onPenProfileChanged: (PenProfile) -> Unit,
-    onEraserModeChanged: (Boolean) -> Unit
+    onEraserModeChanged: (Boolean) -> Unit,
+    onScrollUp: () -> Unit = {},
+    onScrollDown: () -> Unit = {},
+    onScrollLeft: () -> Unit = {},
+    onScrollRight: () -> Unit = {},
+    onZoomIn: () -> Unit = {},
+    onZoomOut: () -> Unit = {},
+    canZoomIn: Boolean = true,
+    canZoomOut: Boolean = true
 ) {
     UpdatedToolbar(
         editorState = editorState,
         onPenProfileChanged = onPenProfileChanged,
-        onEraserModeChanged = onEraserModeChanged
+        onEraserModeChanged = onEraserModeChanged,
+        onScrollUp = onScrollUp,
+        onScrollDown = onScrollDown,
+        onScrollLeft = onScrollLeft,
+        onScrollRight = onScrollRight,
+        onZoomIn = onZoomIn,
+        onZoomOut = onZoomOut,
+        canZoomIn = canZoomIn,
+        canZoomOut = canZoomOut
     )
 }

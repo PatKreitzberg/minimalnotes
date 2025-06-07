@@ -9,6 +9,7 @@ import com.wyldsoft.notes.data.ShapeFactory
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.onyx.android.sdk.data.note.TouchPoint
 
 /**
  * Utility class to convert between drawing shapes and database shapes
@@ -30,6 +31,23 @@ object ShapeUtils {
             profileId = penProfile.profileId
         )
 
+        // Calculate bounding box with stroke padding
+        drawingShape.updateShapeRect()
+        val bounds = drawingShape.boundingRect
+        val strokePadding = drawingShape.strokeWidth / 2f
+        
+        val (minX, minY, maxX, maxY) = if (bounds != null && !bounds.isEmpty) {
+            arrayOf(
+                bounds.left - strokePadding,
+                bounds.top - strokePadding,
+                bounds.right + strokePadding,
+                bounds.bottom + strokePadding
+            )
+        } else {
+            // Fallback to touch points if bounds are unavailable
+            calculateBoundsFromTouchPoints(drawingShape)
+        }
+
         return DatabaseShape(
             id = NanoIdUtils.randomNanoId(),
             noteId = noteId,
@@ -39,7 +57,11 @@ object ShapeUtils {
             strokeColor = drawingShape.strokeColor,
             strokeWidth = drawingShape.strokeWidth,
             isTransparent = drawingShape.isTransparent,
-            penProfileData = storedPenProfile
+            penProfileData = storedPenProfile,
+            boundingMinX = minX,
+            boundingMinY = minY,
+            boundingMaxX = maxX,
+            boundingMaxY = maxY
         )
     }
 
@@ -75,6 +97,38 @@ object ShapeUtils {
             penType = penType,
             strokeColor = Color(storedProfile.strokeColor),
             profileId = storedProfile.profileId
+        )
+    }
+
+    /**
+     * Calculate bounding box from touch points when shape bounds are unavailable
+     */
+    private fun calculateBoundsFromTouchPoints(drawingShape: DrawingShape): Array<Float> {
+        val touchPoints = drawingShape.touchPointList?.points
+        
+        if (touchPoints.isNullOrEmpty()) {
+            return arrayOf(0f, 0f, 0f, 0f)
+        }
+
+        var minX = touchPoints[0].x
+        var maxX = touchPoints[0].x
+        var minY = touchPoints[0].y
+        var maxY = touchPoints[0].y
+
+        for (point in touchPoints) {
+            minX = minX.coerceAtMost(point.x)
+            maxX = maxX.coerceAtLeast(point.x)
+            minY = minY.coerceAtMost(point.y)
+            maxY = maxY.coerceAtLeast(point.y)
+        }
+
+        // Add stroke padding
+        val strokePadding = drawingShape.strokeWidth / 2f
+        return arrayOf(
+            minX - strokePadding,
+            minY - strokePadding,
+            maxX + strokePadding,
+            maxY + strokePadding
         )
     }
 }

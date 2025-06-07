@@ -10,6 +10,7 @@ import androidx.core.graphics.createBitmap
 import com.wyldsoft.notes.render.RendererHelper
 import com.wyldsoft.notes.render.RendererToScreenRequest
 import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
+import com.wyldsoft.notes.editorview.viewport.ViewportController
 import com.onyx.android.sdk.rx.RxManager
 
 /**
@@ -28,6 +29,9 @@ class OnyxRenderingManager {
     // Current bitmap and canvas for drawing
     private var currentBitmap: Bitmap? = null
     private var currentCanvas: Canvas? = null
+    
+    // Viewport controller for transformations
+    private var viewportController: ViewportController? = null
 
     init {
         initializeRenderer()
@@ -39,6 +43,15 @@ class OnyxRenderingManager {
     private fun initializeRenderer() {
         rendererHelper = RendererHelper()
         rxManager = RxManager.Builder.sharedSingleThreadManager()
+    }
+
+    /**
+     * Set the viewport controller for applying transformations during rendering
+     * @param controller ViewportController instance
+     */
+    fun setViewportController(controller: ViewportController?) {
+        this.viewportController = controller
+        Log.d(TAG, "ViewportController set: ${controller != null}")
     }
 
     /**
@@ -154,9 +167,29 @@ class OnyxRenderingManager {
      */
     private fun setupRenderContext(renderContext: RendererHelper.RenderContext, bitmap: Bitmap) {
         renderContext.bitmap = bitmap
-        renderContext.canvas = currentCanvas ?: Canvas(bitmap)
+        val canvas = currentCanvas ?: Canvas(bitmap)
+        
+        // Apply viewport transformation matrix if available
+        viewportController?.let { controller ->
+            canvas.save()
+            canvas.setMatrix(controller.getTransformMatrix())
+            Log.d(TAG, "Applied viewport transformation matrix - zoom: ${controller.getZoomLevel()}")
+        }
+        
+        renderContext.canvas = canvas
         renderContext.paint = createRenderPaint()
         renderContext.viewPoint = android.graphics.Point(0, 0)
+    }
+
+    /**
+     * Restore canvas state after rendering if viewport transformation was applied
+     * @param canvas Canvas to restore
+     */
+    private fun restoreCanvasState(canvas: Canvas) {
+        if (viewportController != null) {
+            canvas.restore()
+            Log.d(TAG, "Restored canvas state after viewport transformation")
+        }
     }
 
     /**

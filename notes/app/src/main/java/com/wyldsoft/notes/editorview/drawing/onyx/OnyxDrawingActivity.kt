@@ -53,7 +53,12 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         renderingManager = OnyxRenderingManager()
         shapeManager = OnyxShapeManager(renderingManager)
         databaseManager = OnyxDatabaseManager(this)
-        eraserManager = OnyxEraserManager(shapeManager, renderingManager)
+        eraserManager = OnyxEraserManager(
+            shapeManager, 
+            renderingManager, 
+            databaseManager,
+            { currentPenProfile } // Provide current pen profile
+        )
         navigationHandler = OnyxNavigationHandler(databaseManager)
     }
 
@@ -249,6 +254,13 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         onyxTouchHelper?.setRawDrawingEnabled(false)
         enableFingerTouch()
         databaseManager.saveAllShapesToDatabase(shapeManager.getAllShapes(), currentPenProfile)
+    }
+
+    /**
+     * Set the viewport controller for rendering transformations
+     */
+    fun setViewportController(controller: com.wyldsoft.notes.editorview.viewport.ViewportController?) {
+        renderingManager.setViewportController(controller)
     }
 
     fun clearDrawing() {

@@ -3,6 +3,7 @@ package com.wyldsoft.notes.editorview.viewport
 import android.graphics.Matrix
 import android.graphics.PointF
 import android.graphics.RectF
+import android.util.Log
 import kotlin.math.max
 import kotlin.math.min
 
@@ -19,6 +20,7 @@ class ViewportManager(
         const val MAX_ZOOM = 3.0f  // 300%
         const val ZOOM_STEP = 0.25f // 25%
         const val SCROLL_STEP = 100f // 100px
+        const val TAG = "ViewportManager"
     }
 
     // Current viewport state
@@ -96,16 +98,19 @@ class ViewportManager(
      * Scroll in specified direction
      */
     fun scrollUp(): Boolean {
+        Log.d(TAG, "Scrolling up")
         val newOffsetY = offsetY + SCROLL_STEP
         return updateOffset(offsetX, newOffsetY)
     }
 
     fun scrollDown(): Boolean {
+        Log.d(TAG, "Scrolling down")
         val newOffsetY = offsetY - SCROLL_STEP
         return updateOffset(offsetX, newOffsetY)
     }
 
     fun scrollLeft(): Boolean {
+        Log.d(TAG, "Scrolling left")
         val newOffsetX = offsetX + SCROLL_STEP
         return updateOffset(newOffsetX, offsetY)
     }

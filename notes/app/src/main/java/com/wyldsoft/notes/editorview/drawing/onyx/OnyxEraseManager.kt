@@ -16,7 +16,9 @@ import com.onyx.android.sdk.rx.RxManager
  */
 class OnyxEraserManager(
     private val shapeManager: OnyxShapeManager,
-    private val renderingManager: OnyxRenderingManager
+    private val renderingManager: OnyxRenderingManager,
+    private val databaseManager: OnyxDatabaseManager,
+    private val getPenProfile: () -> com.wyldsoft.notes.pen.PenProfile
 ) {
     companion object {
         private const val TAG = "OnyxEraserManager"
@@ -94,6 +96,9 @@ class OnyxEraserManager(
         // Log erasing statistics
         if (currentErasingSession.hasErasedShapes()) {
             Log.d(TAG, "Erasing session completed - ${currentErasingSession.erasedShapes.size} shapes erased")
+            Log.d(TAG, "Total shapes remaining in shape manager: ${shapeManager.getAllShapes().size}")
+        } else {
+            Log.d(TAG, "Erasing session ended with no shapes erased")
         }
 
         // Enable EpdController post as requested
@@ -165,16 +170,35 @@ class OnyxEraserManager(
      * @param shapesToErase Collection of shapes to erase
      */
     private fun eraseShapesImmediately(shapesToErase: Collection<com.wyldsoft.notes.editorview.drawing.shape.DrawingShape>) {
+        Log.d(TAG, "Erasing ${shapesToErase.size} shapes immediately")
+        
         // Remove shapes from shape manager
-        shapeManager.removeShapes(shapesToErase)
+        val removedCount = shapeManager.removeShapes(shapesToErase)
+        Log.d(TAG, "Removed $removedCount shapes from shape manager")
 
         // Add to erasing session
         shapesToErase.forEach { shape ->
             currentErasingSession.addErasedShape(shape)
         }
 
+        // Update database immediately with remaining shapes
+        updateDatabaseWithRemainingShapes()
+
         // Trigger immediate partial refresh
         performOptimizedRefresh(null)
+    }
+
+    /**
+     * Update database with remaining shapes after erasing
+     */
+    private fun updateDatabaseWithRemainingShapes() {
+        val remainingShapes = shapeManager.getAllShapes()
+        
+        // Get current pen profile from the provided function
+        val currentPenProfile = getPenProfile()
+        
+        Log.d(TAG, "Updating database with ${remainingShapes.size} remaining shapes")
+        databaseManager.updateDatabaseAfterErasing(remainingShapes, currentPenProfile)
     }
 
     /**

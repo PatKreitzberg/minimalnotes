@@ -44,7 +44,7 @@ object OnyxTouchCallbackFactory {
 
             override fun onEndRawDrawing(b: Boolean, touchPoint: TouchPoint?) {
                 if (eraserManager.isEraserModeEnabled()) {
-                    handleEndErasing(touchPoint, eraserManager, databaseManager, navigationHandler, renderingManager, activity, shapeManager)
+                    handleEndErasing(touchPoint, eraserManager, activity)
                 } else {
                     handleEndDrawing(touchPoint, shapeManager, databaseManager, navigationHandler, renderingManager, activity)
                 }
@@ -73,11 +73,14 @@ object OnyxTouchCallbackFactory {
 
             override fun onEndRawErasing(b: Boolean, touchPoint: TouchPoint?) {
                 Log.d(TAG, "onEndRawErasing called")
-                handleEndErasing(touchPoint, eraserManager, databaseManager, navigationHandler, renderingManager, activity, shapeManager)
+                handleEndErasing(touchPoint, eraserManager, activity)
             }
 
             override fun onRawErasingTouchPointMoveReceived(touchPoint: TouchPoint?) {
-                handleEraserMovement(touchPoint, eraserManager)
+                /*
+                Don't have anything here. We will handle erasing once the user has picked up the eraser in
+                the function onRawErasingTouchPointListReceived.
+                 */
             }
 
             override fun onRawErasingTouchPointListReceived(touchPointList: TouchPointList?) {
@@ -172,27 +175,14 @@ object OnyxTouchCallbackFactory {
     private fun handleEndErasing(
         touchPoint: TouchPoint?,
         eraserManager: OnyxEraserManager,
-        databaseManager: OnyxDatabaseManager,
-        navigationHandler: OnyxNavigationHandler,
-        renderingManager: OnyxRenderingManager,
-        activity: OnyxDrawingActivity,
-        shapeManager: OnyxShapeManager
+        activity: OnyxDrawingActivity
     ) {
         Log.d(TAG, "Ending erasing operation")
 
         activity.enableFingerTouch()
 
+        // End erasing - this handles database updates and refresh internally
         eraserManager.endErasing(touchPoint, activity.surfaceView)
-
-        // Update database if we erased shapes and have a current note
-        val erasingSession = eraserManager.getCurrentErasingSession()
-        if (erasingSession.hasErasedShapes() && navigationHandler.hasCurrentNote()) {
-            // Save all remaining shapes to database
-            databaseManager.saveAllShapesToDatabase(
-                shapeManager.getAllShapes(),
-                activity.currentPenProfile
-            )
-        }
     }
 
     /**
@@ -203,9 +193,10 @@ object OnyxTouchCallbackFactory {
     }
 
     /**
-     * Handle eraser path received (list of points)
+     * Handle eraser path received (list of points) - this is when actual erasing occurs
      */
     private fun handleEraserPathReceived(touchPointList: TouchPointList?, eraserManager: OnyxEraserManager) {
-        eraserManager.processEraserMovement(touchPointList)
+        Log.d(TAG, "handleEraserPathReceived called with ${touchPointList?.size() ?: 0} points")
+        eraserManager.processCompleteEraserPath(touchPointList)
     }
 }

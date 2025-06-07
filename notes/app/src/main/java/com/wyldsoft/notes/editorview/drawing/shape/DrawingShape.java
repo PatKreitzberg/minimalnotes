@@ -90,6 +90,9 @@ public class DrawingShape {
     }
 
     public void updateShapeRect() {
+        // Reset originRect to ensure fresh calculation
+        originRect = null;
+        
         List<TouchPoint> list = touchPointList.getPoints();
         for(TouchPoint touchPoint: list) {
             if (touchPoint == null) {
@@ -101,7 +104,13 @@ public class DrawingShape {
                 originRect.union(touchPoint.x, touchPoint.y);
             }
         }
-        boundingRect = new RectF(originRect);
+        
+        // Only create boundingRect if originRect was successfully created
+        if (originRect != null) {
+            boundingRect = new RectF(originRect);
+        } else {
+            boundingRect = null;
+        }
     }
 
     public void render(final RendererHelper.RenderContext renderContext) {

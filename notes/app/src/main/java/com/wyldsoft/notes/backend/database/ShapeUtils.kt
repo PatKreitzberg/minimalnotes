@@ -10,6 +10,7 @@ import com.aventrix.jnanoid.jnanoid.NanoIdUtils
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.onyx.android.sdk.data.note.TouchPoint
+import android.graphics.RectF
 
 /**
  * Utility class to convert between drawing shapes and database shapes
@@ -98,6 +99,30 @@ object ShapeUtils {
             strokeColor = Color(storedProfile.strokeColor),
             profileId = storedProfile.profileId
         )
+    }
+
+    /**
+     * Filter shapes that intersect with the given bounding rectangle
+     * This is a shared utility function used by various components that need to
+     * find shapes within a specific area (e.g., erasing, partial refresh)
+     * @param shapes List of shapes to filter
+     * @param bounds Bounding rectangle to test intersection with
+     * @return List of shapes that intersect with the bounds
+     */
+    fun filterShapesInBounds(shapes: List<DrawingShape>, bounds: RectF): List<DrawingShape> {
+        return shapes.filter { shape ->
+            // Ensure shape rect is updated with fresh calculation
+            shape.updateShapeRect()
+            
+            // Check if shape has valid bounding rect and intersects with bounds
+            shape.boundingRect?.let { shapeBounds ->
+                if (!shapeBounds.isEmpty) {
+                    RectF.intersects(bounds, shapeBounds)
+                } else {
+                    false
+                }
+            } ?: false
+        }
     }
 
     /**

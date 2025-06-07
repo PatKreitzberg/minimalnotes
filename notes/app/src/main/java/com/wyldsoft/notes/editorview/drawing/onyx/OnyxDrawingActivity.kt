@@ -261,6 +261,8 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
      */
     fun setViewportController(controller: com.wyldsoft.notes.editorview.viewport.ViewportController?) {
         renderingManager.setViewportController(controller)
+        shapeManager.setViewportController(controller)
+        eraserManager.setViewportController(controller)
     }
 
     fun clearDrawing() {

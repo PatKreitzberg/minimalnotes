@@ -1,6 +1,7 @@
 package com.wyldsoft.notes.editorview.drawing.onyx
 
 import android.util.Log
+import android.graphics.PointF
 import com.onyx.android.sdk.api.device.epd.EpdController
 import com.onyx.android.sdk.data.note.TouchPoint
 import com.onyx.android.sdk.pen.data.TouchPointList
@@ -29,11 +30,12 @@ class OnyxEraserManager(
     private var isErasingInProgress = false
     private var currentErasingSession = EraserUtils.ErasingSession()
     private var eraserPath = mutableListOf<TouchPoint>()
+    
+    // Viewport controller for coordinate transforms
+    private var viewportController: com.wyldsoft.notes.editorview.viewport.ViewportController? = null
 
     // Partial refresh manager for optimized erasing
-    private val partialRefreshManager: PartialRefreshEraserManager by lazy {
-        PartialRefreshEraserManager(getRxManager(), getRendererHelper())
-    }
+    private lateinit var partialRefreshManager: PartialRefreshEraserManager
 
     /**
      * Set eraser mode enabled/disabled
@@ -52,6 +54,21 @@ class OnyxEraserManager(
      * @return True if eraser mode is enabled
      */
     fun isEraserModeEnabled(): Boolean = eraserModeEnabled
+
+    /**
+     * Set the viewport controller for coordinate transformations
+     * @param controller ViewportController instance
+     */
+    fun setViewportController(controller: com.wyldsoft.notes.editorview.viewport.ViewportController?) {
+        viewportController = controller
+        
+        // Initialize partial refresh manager with viewport controller
+        partialRefreshManager = PartialRefreshEraserManager(
+            getRxManager(), 
+            getRendererHelper(), 
+            viewportController
+        )
+    }
 
     /**
      * Check if erasing operation is currently in progress
@@ -80,12 +97,13 @@ class OnyxEraserManager(
     }
 
     /**
-     * End the current erasing session
+     * End the current erasing session and finalize all changes
      * @param touchPoint Final touch point where erasing ends
      * @param surfaceView SurfaceView to refresh after erasing
      */
     fun endErasing(touchPoint: TouchPoint?, surfaceView: android.view.SurfaceView?) {
         Log.d(TAG, "Ending erasing session")
+
         isErasingInProgress = false
 
         // Add final touch point to eraser path
@@ -93,10 +111,13 @@ class OnyxEraserManager(
             eraserPath.add(point)
         }
 
-        // Log erasing statistics
+        // Update database with remaining shapes if any shapes were erased
         if (currentErasingSession.hasErasedShapes()) {
             Log.d(TAG, "Erasing session completed - ${currentErasingSession.erasedShapes.size} shapes erased")
             Log.d(TAG, "Total shapes remaining in shape manager: ${shapeManager.getAllShapes().size}")
+            
+            // Update database with remaining shapes
+            updateDatabaseWithRemainingShapes()
         } else {
             Log.d(TAG, "Erasing session ended with no shapes erased")
         }
@@ -104,8 +125,10 @@ class OnyxEraserManager(
         // Enable EpdController post as requested
         EpdController.enablePost(surfaceView, 1)
 
-        // Perform optimized refresh
-        performOptimizedRefresh(surfaceView)
+        // Perform optimized refresh only if shapes were erased
+        if (currentErasingSession.hasErasedShapes()) {
+            performOptimizedRefresh(surfaceView)
+        }
 
         // Clear session data
         currentErasingSession.clear()
@@ -115,48 +138,44 @@ class OnyxEraserManager(
     }
 
     /**
-     * Process eraser movement with individual touch point
+     * Process eraser movement during drawing (collect points only, no erasing)
      * @param touchPoint Touch point from eraser movement
      */
     fun processEraserMovement(touchPoint: TouchPoint?) {
+        Log.d(TAG, "Collecting eraser movement point: $touchPoint")
         touchPoint?.let { point ->
             eraserPath.add(point)
-
-            // Find shapes to erase at this point
-            val availableShapes = shapeManager.getShapesSnapshot()
-            val newShapesToErase = EraserUtils.findShapesToEraseAtPoint(point, availableShapes)
-
-            if (newShapesToErase.isNotEmpty()) {
-                eraseShapesImmediately(newShapesToErase)
-                Log.d(TAG, "Erased ${newShapesToErase.size} shapes at point move")
-            }
         }
     }
 
     /**
-     * Process eraser movement with touch point list
-     * @param touchPointList List of touch points from eraser movement
+     * Process complete eraser path when user stops erasing
+     * This is the only place where actual erasing occurs
+     * @param touchPointList Complete path of eraser movement
      */
-    fun processEraserMovement(touchPointList: TouchPointList?) {
-        // do nothing, will erase once user stops erasing
+    fun processCompleteEraserPath(touchPointList: TouchPointList?) {
+        touchPointList?.let { eraserPathList ->
+            Log.d(TAG, "Processing complete eraser path with ${eraserPathList.size()} points")
 
-//        touchPointList?.let { eraserPathList ->
-//            Log.d(TAG, "Processing eraser movement with ${eraserPathList.size()} points")
-//
-//            // Add all points to eraser path
-//            eraserPath.addAll(eraserPathList.points)
-//
-//            // Find shapes to erase
-//            val availableShapes = shapeManager.getShapesSnapshot()
-//            val newShapesToErase = EraserUtils.findShapesToErase(eraserPathList, availableShapes)
-//
-//            if (newShapesToErase.isNotEmpty()) {
-//                eraseShapesImmediately(newShapesToErase)
-//                Log.d(TAG, "Erased ${newShapesToErase.size} shapes, total erased: ${currentErasingSession.erasedShapes.size}")
-//            } else {
-//                Log.d(TAG, "No new shapes to erase at this point")
-//            }
-//        }
+            // Add all points to eraser path
+            eraserPath.addAll(eraserPathList.points)
+
+            // Adjust eraser path for viewport transforms if controller is available
+            val adjustedEraserPath = viewportController?.let { controller ->
+                adjustEraserPathForViewport(eraserPathList, controller)
+            } ?: eraserPathList
+
+            // Find shapes to erase using the complete adjusted path
+            val availableShapes = shapeManager.getShapesSnapshot()
+            val shapesToErase = EraserUtils.findShapesToErase(adjustedEraserPath, availableShapes)
+
+            if (shapesToErase.isNotEmpty()) {
+                eraseShapesCompletely(shapesToErase)
+                Log.d(TAG, "Erased ${shapesToErase.size} shapes with complete path")
+            } else {
+                Log.d(TAG, "No shapes to erase with complete path")
+            }
+        }
     }
 
     /**
@@ -166,11 +185,11 @@ class OnyxEraserManager(
     fun getCurrentErasingSession(): EraserUtils.ErasingSession = currentErasingSession
 
     /**
-     * Immediately erase shapes and update the session
+     * Erase shapes completely at the end of erasing session
      * @param shapesToErase Collection of shapes to erase
      */
-    private fun eraseShapesImmediately(shapesToErase: Collection<com.wyldsoft.notes.editorview.drawing.shape.DrawingShape>) {
-        Log.d(TAG, "Erasing ${shapesToErase.size} shapes immediately")
+    private fun eraseShapesCompletely(shapesToErase: Collection<com.wyldsoft.notes.editorview.drawing.shape.DrawingShape>) {
+        Log.d(TAG, "Erasing ${shapesToErase.size} shapes completely")
         
         // Remove shapes from shape manager
         val removedCount = shapeManager.removeShapes(shapesToErase)
@@ -181,11 +200,7 @@ class OnyxEraserManager(
             currentErasingSession.addErasedShape(shape)
         }
 
-        // Update database immediately with remaining shapes
-        updateDatabaseWithRemainingShapes()
-
-        // Trigger immediate partial refresh
-        performOptimizedRefresh(null)
+        // Note: Database update and refresh will happen in endErasing()
     }
 
     /**
@@ -206,6 +221,15 @@ class OnyxEraserManager(
      * @param surfaceView Optional surface view for refresh
      */
     private fun performOptimizedRefresh(surfaceView: android.view.SurfaceView?) {
+        // Initialize partial refresh manager if not already done
+        if (!::partialRefreshManager.isInitialized) {
+            partialRefreshManager = PartialRefreshEraserManager(
+                getRxManager(), 
+                getRendererHelper(), 
+                viewportController
+            )
+        }
+        
         val refreshBounds = partialRefreshManager.calculateCombinedRefreshBounds(
             currentErasingSession.erasedShapes,
             eraserPath,
@@ -287,6 +311,45 @@ class OnyxEraserManager(
         eraserPath.clear()
         isErasingInProgress = false
         Log.d(TAG, "Cleared erasing session")
+    }
+
+    /**
+     * Adjust eraser path to account for viewport transforms (zoom and scroll)
+     * Converts screen coordinates to canvas coordinates at 100% zoom
+     * @param eraserPath Original eraser path from input
+     * @param viewportController Controller with current viewport state
+     * @return Adjusted eraser path in canvas coordinates
+     */
+    private fun adjustEraserPathForViewport(
+        eraserPath: TouchPointList,
+        viewportController: com.wyldsoft.notes.editorview.viewport.ViewportController
+    ): TouchPointList {
+        val originalPoints = eraserPath.points
+        if (originalPoints.isNullOrEmpty()) {
+            return eraserPath
+        }
+
+        val adjustedPoints = originalPoints.map { touchPoint ->
+            // Convert screen coordinates to canvas coordinates
+            val screenPoint = PointF(touchPoint.x, touchPoint.y)
+            val canvasPoint = viewportController.screenToCanvas(screenPoint)
+            
+            TouchPoint().apply {
+                x = canvasPoint.x
+                y = canvasPoint.y
+                pressure = touchPoint.pressure
+                timestamp = touchPoint.timestamp
+                size = touchPoint.size
+            }
+        }
+
+        // Create new TouchPointList with adjusted points
+        val adjustedEraserPath = TouchPointList()
+        adjustedPoints.forEach { point ->
+            adjustedEraserPath.add(point)
+        }
+
+        return adjustedEraserPath
     }
 
     /**

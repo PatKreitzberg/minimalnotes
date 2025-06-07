@@ -115,6 +115,20 @@ class ViewportController(
     fun getZoomLevel(): Float = viewportManager.getZoomLevel()
 
     /**
+     * Convert screen coordinates to canvas coordinates
+     */
+    fun screenToCanvas(screenPoint: android.graphics.PointF): android.graphics.PointF {
+        return viewportManager.screenToCanvas(screenPoint)
+    }
+
+    /**
+     * Convert canvas coordinates to screen coordinates  
+     */
+    fun canvasToScreen(canvasPoint: android.graphics.PointF): android.graphics.PointF {
+        return viewportManager.canvasToScreen(canvasPoint)
+    }
+
+    /**
      * Check zoom capabilities
      */
     fun canZoomIn(): Boolean = viewportManager.canZoomIn()

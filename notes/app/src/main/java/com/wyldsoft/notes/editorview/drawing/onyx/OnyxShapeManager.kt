@@ -1,6 +1,7 @@
 package com.wyldsoft.notes.editorview.drawing.onyx
 
 import android.util.Log
+import android.graphics.PointF
 import com.onyx.android.sdk.data.note.TouchPoint
 import com.onyx.android.sdk.pen.data.TouchPointList
 import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
@@ -22,9 +23,21 @@ class OnyxShapeManager(
 
     // Store all drawn shapes for re-rendering and erasing
     private val drawnShapes = mutableListOf<DrawingShape>()
+    
+    // Viewport controller for coordinate transforms
+    private var viewportController: com.wyldsoft.notes.editorview.viewport.ViewportController? = null
+
+    /**
+     * Set the viewport controller for coordinate transformations
+     * @param controller ViewportController instance
+     */
+    fun setViewportController(controller: com.wyldsoft.notes.editorview.viewport.ViewportController?) {
+        viewportController = controller
+    }
 
     /**
      * Create a new shape from touch points and current pen profile
+     * Touch points are automatically adjusted for viewport transforms if controller is set
      * @param touchPointList The touch input data
      * @param penProfile Current pen configuration
      * @return Created shape ready for rendering
@@ -36,7 +49,12 @@ class OnyxShapeManager(
         val shapeType = mapPenTypeToShapeType(penProfile.penType)
         val shape = ShapeFactory.createShape(shapeType)
 
-        configureShape(shape, touchPointList, penProfile, shapeType)
+        // Adjust touch points for viewport transforms if controller is available
+        val adjustedTouchPointList = viewportController?.let { controller ->
+            adjustTouchPointsForViewport(touchPointList, controller)
+        } ?: touchPointList
+
+        configureShape(shape, adjustedTouchPointList, penProfile, shapeType)
 
         return shape
     }
@@ -186,4 +204,43 @@ class OnyxShapeManager(
      * @return Snapshot list of current shapes
      */
     fun getShapesSnapshot(): List<DrawingShape> = drawnShapes.toList()
+
+    /**
+     * Adjust touch points to account for viewport transforms (zoom and scroll)
+     * Converts screen coordinates to canvas coordinates at 100% zoom
+     * @param touchPointList Original touch points from input
+     * @param viewportController Controller with current viewport state
+     * @return Adjusted touch point list in canvas coordinates
+     */
+    private fun adjustTouchPointsForViewport(
+        touchPointList: TouchPointList,
+        viewportController: com.wyldsoft.notes.editorview.viewport.ViewportController
+    ): TouchPointList {
+        val originalPoints = touchPointList.points
+        if (originalPoints.isNullOrEmpty()) {
+            return touchPointList
+        }
+
+        val adjustedPoints = originalPoints.map { touchPoint ->
+            // Convert screen coordinates to canvas coordinates
+            val screenPoint = PointF(touchPoint.x, touchPoint.y)
+            val canvasPoint = viewportController.screenToCanvas(screenPoint)
+            
+            TouchPoint().apply {
+                x = canvasPoint.x
+                y = canvasPoint.y
+                pressure = touchPoint.pressure
+                timestamp = touchPoint.timestamp
+                size = touchPoint.size
+            }
+        }
+
+        // Create new TouchPointList with adjusted points
+        val adjustedTouchPointList = TouchPointList()
+        adjustedPoints.forEach { point ->
+            adjustedTouchPointList.add(point)
+        }
+
+        return adjustedTouchPointList
+    }
 }

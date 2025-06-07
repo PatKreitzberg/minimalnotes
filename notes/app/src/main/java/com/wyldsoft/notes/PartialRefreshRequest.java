@@ -58,8 +58,23 @@ public class PartialRefreshRequest extends RxRequest {
     }
 
     private void drawRendererContent(Bitmap bitmap, Canvas canvas) {
-        Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-        canvas.drawBitmap(bitmap, rect, rect, null);
+        // Source rectangle - entire bitmap
+        Rect srcRect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        
+        // Destination rectangle - positioned at refresh bounds on screen
+        Rect dstRect = new Rect(
+            (int) refreshRect.left,
+            (int) refreshRect.top,
+            (int) refreshRect.right,
+            (int) refreshRect.bottom
+        );
+        
+        // Debug logging
+        android.util.Log.d("PartialRefreshRequest", 
+            "Drawing bitmap " + bitmap.getWidth() + "x" + bitmap.getHeight() + 
+            " from " + srcRect + " to " + dstRect);
+        
+        canvas.drawBitmap(bitmap, srcRect, dstRect, null);
     }
 
 }

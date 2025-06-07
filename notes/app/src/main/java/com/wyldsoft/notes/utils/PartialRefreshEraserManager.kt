@@ -10,6 +10,7 @@ import androidx.core.graphics.createBitmap
 import com.wyldsoft.notes.PartialRefreshRequest
 import com.wyldsoft.notes.render.RendererHelper
 import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
+import com.wyldsoft.notes.backend.database.ShapeUtils
 import com.onyx.android.sdk.rx.RxManager
 
 /**
@@ -18,7 +19,8 @@ import com.onyx.android.sdk.rx.RxManager
  */
 class PartialRefreshEraserManager(
     private val rxManager: RxManager,
-    private val rendererHelper: RendererHelper
+    private val rendererHelper: RendererHelper,
+    private val viewportController: com.wyldsoft.notes.editorview.viewport.ViewportController? = null
 ) {
 
     companion object {
@@ -84,17 +86,38 @@ class PartialRefreshEraserManager(
                 strokeCap = Paint.Cap.ROUND
                 strokeJoin = Paint.Join.ROUND
             }
+            
+            // Apply viewport transformation matrix if available (critical for correct positioning)
+            viewportController?.let { controller ->
+                refreshCanvas.save()
+                refreshCanvas.setMatrix(controller.getTransformMatrix())
+                Log.d(TAG, "Applied viewport transformation to partial refresh - zoom: ${controller.getZoomLevel()}")
+            }
+            
             renderContext.viewPoint = android.graphics.Point(
                 -validatedBounds.left.toInt(),
                 -validatedBounds.top.toInt()
             )
 
             // Filter and render only shapes that intersect with refresh area
-            val shapesToRender = filterShapesInBounds(allShapes, validatedBounds)
-            Log.d(TAG, "Rendering ${shapesToRender.size} shapes in refresh area")
+            val shapesToRender = ShapeUtils.filterShapesInBounds(allShapes, validatedBounds)
+            Log.d(TAG, "Rendering ${shapesToRender.size} shapes in refresh area out of ${allShapes.size} total shapes")
+            Log.d(TAG, "Refresh bounds: $validatedBounds")
+            
+            // Debug: Log some shape bounds
+            shapesToRender.take(3).forEach { shape ->
+                shape.updateShapeRect()
+                Log.d(TAG, "Shape bounds: ${shape.boundingRect}")
+            }
 
             // Render shapes with offset for the refresh area
             renderShapesWithOffset(shapesToRender, renderContext, validatedBounds)
+
+            // Restore canvas state if viewport transformation was applied
+            viewportController?.let {
+                refreshCanvas.restore()
+                Log.d(TAG, "Restored canvas state after viewport transformation")
+            }
 
             // Execute partial refresh request
             val refreshRequest = PartialRefreshRequest(
@@ -151,17 +174,6 @@ class PartialRefreshEraserManager(
         }
     }
 
-    /**
-     * Filter shapes that intersect with the refresh bounds
-     */
-    private fun filterShapesInBounds(shapes: List<DrawingShape>, bounds: RectF): List<DrawingShape> {
-        return shapes.filter { shape ->
-            shape.updateShapeRect()
-            shape.boundingRect?.let { shapeBounds ->
-                RectF.intersects(bounds, shapeBounds)
-            } ?: false
-        }
-    }
 
     /**
      * Render shapes with appropriate offset for the refresh area

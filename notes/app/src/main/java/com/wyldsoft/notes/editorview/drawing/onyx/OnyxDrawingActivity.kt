@@ -345,4 +345,13 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         Log.d(TAG, "Updated exclusion zones, forcing screen refresh")
         forceScreenRefresh()
     }
+
+    /**
+     * Handle zoom to fit functionality
+     * Resets zoom to 100%
+     */
+    override fun handleZoomToFit() {
+        Log.d(TAG, "Resetting zoom to 100%")
+        currentViewportController?.resetZoomToFit()
+    }
 }

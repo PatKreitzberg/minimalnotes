@@ -25,14 +25,7 @@ fun EditorView(
     onPenProfileChanged: (PenProfile) -> Unit = {},
     onEraserModeChanged: (Boolean) -> Unit = {},
     onNavigateBack: () -> Unit = {},
-    onScrollUp: () -> Unit = {},
-    onScrollDown: () -> Unit = {},
-    onScrollLeft: () -> Unit = {},
-    onScrollRight: () -> Unit = {},
-    onZoomIn: () -> Unit = {},
-    onZoomOut: () -> Unit = {},
-    canZoomIn: Boolean = true,
-    canZoomOut: Boolean = true
+    onZoomToFit: () -> Unit = {}
 ) {
     val editorState = remember { EditorState() }
     val currentNote by viewModel.currentNote.collectAsState()
@@ -107,14 +100,7 @@ fun EditorView(
                     editorState = editorState,
                     onPenProfileChanged = onPenProfileChanged,
                     onEraserModeChanged = onEraserModeChanged,
-                    onScrollUp = onScrollUp,
-                    onScrollDown = onScrollDown,
-                    onScrollLeft = onScrollLeft,
-                    onScrollRight = onScrollRight,
-                    onZoomIn = onZoomIn,
-                    onZoomOut = onZoomOut,
-                    canZoomIn = canZoomIn,
-                    canZoomOut = canZoomOut
+                    onZoomToFit = onZoomToFit
                 )
 
                 Spacer(modifier = Modifier.height(1.dp)) // Reduced spacing
@@ -142,26 +128,12 @@ private fun CleanToolbar(
     editorState: EditorState,
     onPenProfileChanged: (PenProfile) -> Unit,
     onEraserModeChanged: (Boolean) -> Unit,
-    onScrollUp: () -> Unit = {},
-    onScrollDown: () -> Unit = {},
-    onScrollLeft: () -> Unit = {},
-    onScrollRight: () -> Unit = {},
-    onZoomIn: () -> Unit = {},
-    onZoomOut: () -> Unit = {},
-    canZoomIn: Boolean = true,
-    canZoomOut: Boolean = true
+    onZoomToFit: () -> Unit = {}
 ) {
     UpdatedToolbar(
         editorState = editorState,
         onPenProfileChanged = onPenProfileChanged,
         onEraserModeChanged = onEraserModeChanged,
-        onScrollUp = onScrollUp,
-        onScrollDown = onScrollDown,
-        onScrollLeft = onScrollLeft,
-        onScrollRight = onScrollRight,
-        onZoomIn = onZoomIn,
-        onZoomOut = onZoomOut,
-        canZoomIn = canZoomIn,
-        canZoomOut = canZoomOut
+        onZoomToFit = onZoomToFit
     )
 }

@@ -73,6 +73,9 @@ abstract class BaseDrawingActivity : ComponentActivity() {
                         },
                         onPenProfileChanged = { penProfile ->
                             updatePenProfile(penProfile)
+                        },
+                        onZoomToFit = {
+                            handleZoomToFit()
                         }
                     )
                 }
@@ -252,4 +255,10 @@ abstract class BaseDrawingActivity : ComponentActivity() {
 
     protected abstract fun initializeDeviceReceiver()
     protected abstract fun onCleanupDeviceReceiver()
+    
+    /**
+     * Handle zoom to fit functionality
+     * Implementations should reset zoom to 100%
+     */
+    protected abstract fun handleZoomToFit()
 }

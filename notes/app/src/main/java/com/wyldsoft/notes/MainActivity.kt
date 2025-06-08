@@ -127,32 +127,10 @@ class MainActivity : OnyxDrawingActivity() {
                         // This will be handled by the BackHandler in EditorView
                         // and the EditorViewModel.navigateBack() call
                     },
-                    onScrollUp = {
-                        viewportController?.scrollUp()
+                    onZoomToFit = {
+                        viewportController?.resetZoomToFit()
                         forceScreenRefresh()
-                    },
-                    onScrollDown = {
-                        viewportController?.scrollDown()
-                        forceScreenRefresh()
-                    },
-                    onScrollLeft = {
-                        viewportController?.scrollLeft()
-                        forceScreenRefresh()
-                    },
-                    onScrollRight = {
-                        viewportController?.scrollRight()
-                        forceScreenRefresh()
-                    },
-                    onZoomIn = {
-                        viewportController?.zoomIn()
-                        forceScreenRefresh()
-                    },
-                    onZoomOut = {
-                        viewportController?.zoomOut()
-                        forceScreenRefresh()
-                    },
-                    canZoomIn = viewportController?.canZoomIn() ?: true,
-                    canZoomOut = viewportController?.canZoomOut() ?: true
+                    }
                 )
             }
         }

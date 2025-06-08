@@ -257,4 +257,16 @@ class ViewportManager(
      * Check if zoom out is possible
      */
     fun canZoomOut(): Boolean = zoomLevel > MIN_ZOOM
+
+    /**
+     * Reset zoom to 100% (MIN_ZOOM)
+     */
+    fun resetZoomToFit(): Boolean {
+        return if (zoomLevel != MIN_ZOOM) {
+            setZoomLevel(MIN_ZOOM)
+            true
+        } else {
+            false
+        }
+    }
 }

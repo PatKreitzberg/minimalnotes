@@ -166,6 +166,18 @@ class ViewportController(
     fun canZoomOut(): Boolean = viewportManager.canZoomOut()
 
     /**
+     * Reset zoom to 100%
+     */
+    fun resetZoomToFit(): Boolean {
+        val changed = viewportManager.resetZoomToFit()
+        if (changed) {
+            Log.d(TAG, "Reset zoom to 100%")
+            notifyViewportChanged()
+        }
+        return changed
+    }
+
+    /**
      * Get visible shapes from all shapes
      */
     fun getVisibleShapes(allShapes: List<DrawingShape>): List<DrawingShape> {

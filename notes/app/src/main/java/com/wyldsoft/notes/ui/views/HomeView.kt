@@ -422,7 +422,7 @@ private fun NotebookItem(
                     Icons.Default.MenuBook,
                     contentDescription = "Notebook",
                     tint = Color(0xFF1976D2),
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(

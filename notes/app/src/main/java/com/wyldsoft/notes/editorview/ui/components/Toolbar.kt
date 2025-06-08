@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,14 +37,7 @@ fun UpdatedToolbar(
     editorState: EditorState,
     onPenProfileChanged: (PenProfile) -> Unit = {},
     onEraserModeChanged: (Boolean) -> Unit = {},
-    onScrollUp: () -> Unit = {},
-    onScrollDown: () -> Unit = {},
-    onScrollLeft: () -> Unit = {},
-    onScrollRight: () -> Unit = {},
-    onZoomIn: () -> Unit = {},
-    onZoomOut: () -> Unit = {},
-    canZoomIn: Boolean = true,
-    canZoomOut: Boolean = true
+    onZoomToFit: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -229,57 +223,11 @@ fun UpdatedToolbar(
             // Vertical divider line
             VerticalDivider()
 
-            // Navigation buttons
+            // Zoom to 100% button
             NavigationButton(
-                icon = NavigationIcons.ArrowUp,
-                contentDescription = "Scroll Up",
-                onClick = onScrollUp,
-                size = 38.dp,
-                iconSize = 19.dp
-            )
-
-            NavigationButton(
-                icon = NavigationIcons.ArrowDown,
-                contentDescription = "Scroll Down",
-                onClick = onScrollDown,
-                size = 38.dp,
-                iconSize = 19.dp
-            )
-
-            NavigationButton(
-                icon = NavigationIcons.ArrowLeft,
-                contentDescription = "Scroll Left",
-                onClick = onScrollLeft,
-                size = 38.dp,
-                iconSize = 19.dp
-            )
-
-            NavigationButton(
-                icon = NavigationIcons.ArrowRight,
-                contentDescription = "Scroll Right",
-                onClick = onScrollRight,
-                size = 38.dp,
-                iconSize = 19.dp
-            )
-
-            // Vertical divider line
-            VerticalDivider()
-
-            // Zoom buttons
-            NavigationButton(
-                icon = NavigationIcons.ZoomIn,
-                contentDescription = "Zoom In",
-                onClick = onZoomIn,
-                enabled = canZoomIn,
-                size = 38.dp,
-                iconSize = 19.dp
-            )
-
-            NavigationButton(
-                icon = NavigationIcons.ZoomOut,
-                contentDescription = "Zoom Out",
-                onClick = onZoomOut,
-                enabled = canZoomOut,
+                icon = Icons.Default.CenterFocusStrong,
+                contentDescription = "Zoom to 100%",
+                onClick = onZoomToFit,
                 size = 38.dp,
                 iconSize = 19.dp
             )

@@ -45,26 +45,6 @@ class ViewportController(
         notifyViewportChanged()
     }
 
-    /**
-     * Zoom operations
-     */
-    fun zoomIn(): Boolean {
-        val changed = viewportManager.zoomIn()
-        if (changed) {
-            Log.d(TAG, "Zoomed in to ${viewportManager.getZoomLevel() * 100}%")
-            notifyViewportChanged()
-        }
-        return changed
-    }
-
-    fun zoomOut(): Boolean {
-        val changed = viewportManager.zoomOut()
-        if (changed) {
-            Log.d(TAG, "Zoomed out to ${viewportManager.getZoomLevel() * 100}%")
-            notifyViewportChanged()
-        }
-        return changed
-    }
 
     /**
      * Zoom operations centered on a specific focus point
@@ -92,39 +72,12 @@ class ViewportController(
     }
 
     /**
-     * Scroll operations
+     * Scroll by specific pixel amounts for proportional scrolling
      */
-    fun scrollUp(): Boolean {
-        val changed = viewportManager.scrollUp()
+    fun scrollByPixels(deltaX: Float, deltaY: Float): Boolean {
+        val changed = viewportManager.scrollByPixels(deltaX, deltaY)
         if (changed) {
-            Log.d(TAG, "Scrolled up")
-            notifyViewportChanged()
-        }
-        return changed
-    }
-
-    fun scrollDown(): Boolean {
-        val changed = viewportManager.scrollDown()
-        if (changed) {
-            Log.d(TAG, "Scrolled down")
-            notifyViewportChanged()
-        }
-        return changed
-    }
-
-    fun scrollLeft(): Boolean {
-        val changed = viewportManager.scrollLeft()
-        if (changed) {
-            Log.d(TAG, "Scrolled left")
-            notifyViewportChanged()
-        }
-        return changed
-    }
-
-    fun scrollRight(): Boolean {
-        val changed = viewportManager.scrollRight()
-        if (changed) {
-            Log.d(TAG, "Scrolled right")
+            Log.d(TAG, "Scrolled by pixels: ($deltaX, $deltaY)")
             notifyViewportChanged()
         }
         return changed

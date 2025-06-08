@@ -1,4 +1,3 @@
-// File: app/src/main/java/com/wyldsoft/notes/ui/views/HomeView.kt
 package com.wyldsoft.notes.ui.views
 
 import android.util.Log
@@ -341,7 +340,7 @@ private fun FolderItem(
                 Icons.Default.Folder,
                 contentDescription = "Folder",
                 tint = Color(0xFFFF9800),
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(48.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
@@ -383,7 +382,7 @@ private fun NotebooksSection(
             }
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.FixedSize(100.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -405,37 +404,31 @@ private fun NotebookItem(
 ) {
     Card(
         modifier = Modifier
-            .aspectRatio(1f)
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    Icons.Default.MenuBook,
-                    contentDescription = "Notebook",
-                    tint = Color(0xFF1976D2),
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = notebook.name,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.Black,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-            }
+            Icon(
+                Icons.Default.MenuBook,
+                contentDescription = "Notebook",
+                tint = Color(0xFF1976D2),
+                modifier = Modifier.size(64.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = notebook.name,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

@@ -117,29 +117,12 @@ class ViewportManager(
     }
 
     /**
-     * Scroll in specified direction
+     * Scroll by specific pixel amounts (proportional scrolling)
      */
-    fun scrollUp(): Boolean {
-        Log.d(TAG, "Scrolling up")
-        val newOffsetY = offsetY + SCROLL_STEP
-        return updateOffset(offsetX, newOffsetY)
-    }
-
-    fun scrollDown(): Boolean {
-        Log.d(TAG, "Scrolling down")
-        val newOffsetY = offsetY - SCROLL_STEP
-        return updateOffset(offsetX, newOffsetY)
-    }
-
-    fun scrollLeft(): Boolean {
-        Log.d(TAG, "Scrolling left")
-        val newOffsetX = offsetX + SCROLL_STEP
-        return updateOffset(newOffsetX, offsetY)
-    }
-
-    fun scrollRight(): Boolean {
-        val newOffsetX = offsetX - SCROLL_STEP
-        return updateOffset(newOffsetX, offsetY)
+    fun scrollByPixels(deltaX: Float, deltaY: Float): Boolean {
+        val newOffsetX = offsetX + deltaX
+        val newOffsetY = offsetY + deltaY
+        return updateOffset(newOffsetX, newOffsetY)
     }
 
     /**

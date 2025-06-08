@@ -183,6 +183,7 @@ abstract class BaseDrawingActivity : ComponentActivity() {
      */
     protected open fun setGestureViewportController(viewportController: ViewportController?) {
         gestureDetector?.setViewportController(viewportController)
+        gestureDetector?.setForceRefreshCallback { forceScreenRefresh() }
         Log.d(TAG, "Gesture viewport controller set: ${viewportController != null}")
     }
 

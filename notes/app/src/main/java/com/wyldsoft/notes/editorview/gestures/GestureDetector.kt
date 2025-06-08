@@ -17,6 +17,7 @@ class GestureDetector(
     // Managers for handling specific operations
     private val scrollManager = ScrollManager(onGestureDetected)
     private val zoomManager = ZoomManager(onGestureDetected)
+    private var onForceRefresh: (() -> Unit)? = null
     // Minimum distance required for a swipe gesture in dp
     private val SCROLL_THRESHOLD = GestureUtils.convertDpToPixel(10.dp, context)
     
@@ -90,8 +91,8 @@ class GestureDetector(
 
                 // Handle scrolling if not zooming
                 if (!zoomManager.isZooming()) {
-                    val deltaX = lastTouchX - event.x
-                    val deltaY = lastTouchY - event.y
+                    val deltaX = event.x - lastTouchX
+                    val deltaY = event.y - lastTouchY
 
                     if (!scrollManager.isScrolling()) {
                         if (xyDistance(deltaX, deltaY) > SCROLL_THRESHOLD) {
@@ -214,6 +215,15 @@ class GestureDetector(
     fun setViewportController(controller: com.wyldsoft.notes.editorview.viewport.ViewportController?) {
         scrollManager.setViewportController(controller)
         zoomManager.setViewportController(controller)
+    }
+    
+    /**
+     * Set callback for forcing screen refresh
+     */
+    fun setForceRefreshCallback(callback: (() -> Unit)?) {
+        onForceRefresh = callback
+        scrollManager.setForceRefreshCallback(callback)
+        zoomManager.setForceRefreshCallback(callback)
     }
     
     fun reset() {

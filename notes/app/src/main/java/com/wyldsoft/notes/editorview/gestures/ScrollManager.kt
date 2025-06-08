@@ -11,15 +11,23 @@ class ScrollManager(
 ) {
     private var viewportController: ViewportController? = null
     private var isScrolling = false
+    private var onForceRefresh: (() -> Unit)? = null
     
-    // Configuration for scroll sensitivity
-    private val scrollStepSize = 50f // Smaller steps for smoother scrolling
+    // Configuration for scroll sensitivity (1.0 = 1:1 pixel mapping)
+    private val scrollSensitivity = 1.0f
     
     /**
      * Set the viewport controller for performing scroll operations
      */
     fun setViewportController(controller: ViewportController?) {
         this.viewportController = controller
+    }
+    
+    /**
+     * Set callback for forcing screen refresh
+     */
+    fun setForceRefreshCallback(callback: (() -> Unit)?) {
+        this.onForceRefresh = callback
     }
     
     /**
@@ -30,37 +38,28 @@ class ScrollManager(
     }
     
     /**
-     * Apply scrolling based on delta movements
+     * Apply proportional scrolling based on delta movements
+     * Now uses direct pixel-to-pixel mapping for smooth, proportional scrolling
      */
     fun applyScroll(deltaX: Float, deltaY: Float) {
         if (!isScrolling) return
         
         val controller = viewportController ?: return
         
-        // Convert pixel deltas to discrete scroll steps
-        val horizontalSteps = (deltaX / scrollStepSize).toInt()
-        val verticalSteps = (deltaY / scrollStepSize).toInt()
+        // Apply proportional scrolling with sensitivity adjustment
+        val adjustedDeltaX = deltaX * scrollSensitivity
+        val adjustedDeltaY = deltaY * scrollSensitivity
         
-        // Apply horizontal scrolling
-        repeat(abs(horizontalSteps)) {
-            if (horizontalSteps > 0) {
-                controller.scrollRight()
-            } else {
-                controller.scrollLeft()
-            }
-        }
+        // Use direct pixel scrolling for smooth, proportional movement
+        val scrolled = controller.scrollByPixels(adjustedDeltaX, adjustedDeltaY)
         
-        // Apply vertical scrolling
-        repeat(abs(verticalSteps)) {
-            if (verticalSteps > 0) {
-                controller.scrollDown()
-            } else {
-                controller.scrollUp()
-            }
+        // Force a screen refresh to ensure visual update
+        if (scrolled) {
+            onForceRefresh?.invoke()
         }
         
         // Notify about scroll event
-        val gesture = "Scrolled by (${deltaX.toInt()}, ${deltaY.toInt()})"
+        val gesture = "Scrolled proportionally by (${adjustedDeltaX.toInt()}, ${adjustedDeltaY.toInt()})"
         onScrollEvent(gesture)
     }
     

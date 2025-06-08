@@ -6,6 +6,7 @@ import android.graphics.RectF
 import android.util.Log
 import android.view.SurfaceView
 import androidx.lifecycle.lifecycleScope
+import com.onyx.android.sdk.api.device.epd.EpdController
 import com.onyx.android.sdk.pen.TouchHelper
 import com.wyldsoft.notes.editorview.editor.EditorState
 import com.wyldsoft.notes.GlobalDeviceReceiver
@@ -298,6 +299,7 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
                 
                 override fun onViewportRefreshRequired() {
                     Log.d(TAG, "Viewport refresh required - forcing full screen refresh")
+                    EpdController.enablePost(surfaceView, 1)
                     forceScreenRefresh()
                 }
             }

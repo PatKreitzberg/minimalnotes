@@ -11,6 +11,7 @@ class ZoomManager(
     private val onZoomEvent: (String) -> Unit
 ) {
     private var viewportController: ViewportController? = null
+    private var onForceRefresh: (() -> Unit)? = null
     
     // Pinch-to-zoom tracking variables
     private var isZooming = false
@@ -25,6 +26,13 @@ class ZoomManager(
      */
     fun setViewportController(controller: ViewportController?) {
         this.viewportController = controller
+    }
+    
+    /**
+     * Set callback for forcing screen refresh
+     */
+    fun setForceRefreshCallback(callback: (() -> Unit)?) {
+        this.onForceRefresh = callback
     }
     
     /**
@@ -130,16 +138,22 @@ class ZoomManager(
         val controller = viewportController ?: return
         
         // Apply zoom based on scale factor, centered on the focus point
+        var zoomed = false
         if (scaleFactor > 1.05f && controller.canZoomIn()) {
-            controller.zoomInAtFocus(focusX, focusY)
+            zoomed = controller.zoomInAtFocus(focusX, focusY)
             
             val gesture = "Zooming in: scale factor ${String.format("%.2f", scaleFactor)} (center: ${focusX.toInt()}, ${focusY.toInt()})"
             onZoomEvent(gesture)
         } else if (scaleFactor < 0.95f && controller.canZoomOut()) {
-            controller.zoomOutAtFocus(focusX, focusY)
+            zoomed = controller.zoomOutAtFocus(focusX, focusY)
             
             val gesture = "Zooming out: scale factor ${String.format("%.2f", scaleFactor)} (center: ${focusX.toInt()}, ${focusY.toInt()})"
             onZoomEvent(gesture)
+        }
+        
+        // Force a screen refresh to ensure visual update
+        if (zoomed) {
+            onForceRefresh?.invoke()
         }
     }
     

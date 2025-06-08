@@ -198,6 +198,8 @@ class GestureDetector(
      * Process touch events to detect gestures - following oldGestureDetector logic exactly
      */
     fun onTouchEvent(event: MotionEvent): Boolean {
+
+
         // Check if this is a stylus input - if so, ignore for gesture detection
         if (isStylusEvent(event)) {
             return false

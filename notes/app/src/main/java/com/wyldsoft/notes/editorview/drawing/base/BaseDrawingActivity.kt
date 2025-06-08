@@ -161,6 +161,9 @@ abstract class BaseDrawingActivity : ComponentActivity() {
 
         // Set up touch event handling for gestures
         surfaceView.setOnTouchListener { _, event ->
+            // have to stop parent from sending MotionEvent.ACTION_CANCEL
+            surfaceView.getParent().requestDisallowInterceptTouchEvent(true)
+
             val gestureConsumed = gestureDetector?.onTouchEvent(event) ?: false
             Log.d(TAG, "Gesture consumed: $gestureConsumed, action=${event.actionMasked}, pointerCount=${event.pointerCount}")
 

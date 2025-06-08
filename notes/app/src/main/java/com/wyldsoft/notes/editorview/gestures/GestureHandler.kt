@@ -1,41 +1,52 @@
 package com.wyldsoft.notes.editorview.gestures
 
+import android.content.Context
 import android.util.Log
+import com.wyldsoft.notes.editorview.viewport.ViewportController
 
 /**
- * Handles detected gestures by logging them and potentially triggering actions.
- * This is a central place for gesture response logic.
+ * Central coordinator for gesture detection and handling.
+ * Manages the GestureDetector and coordinates gesture responses.
  */
-class GestureHandler {
+class GestureHandler(context: Context) {
     private val TAG = "GestureHandler"
+    
+    // Main gesture detector that coordinates with managers
+    private val gestureDetector = GestureDetector(context) { gesture ->
+        handleGesture(gesture)
+    }
+    
+    /**
+     * Set the viewport controller for scroll and zoom operations
+     */
+    fun setViewportController(controller: ViewportController?) {
+        gestureDetector.setViewportController(controller)
+    }
     
     /**
      * Process a detected gesture
      * @param gesture The gesture description string
      */
-    fun handleGesture(gesture: String) {
+    private fun handleGesture(gesture: String) {
         Log.d(TAG, gesture)
         
-        // For now, just log the gesture
-        // In the future, this could dispatch to specific handlers
-        // based on the gesture type
-        
+        // Categorize and handle gestures
         when {
-            gesture.contains("Swipe") -> handleSwipeGesture(gesture)
-            gesture.contains("Pinch") -> handlePinchGesture(gesture)
+            gesture.contains("Scroll") -> handleScrollGesture(gesture)
+            gesture.contains("Zoom") -> handleZoomGesture(gesture)
             gesture.contains("tap") -> handleTapGesture(gesture)
-            else -> Log.d(TAG, "Unknown gesture: $gesture")
+            else -> Log.d(TAG, "Gesture: $gesture")
         }
     }
     
-    private fun handleSwipeGesture(gesture: String) {
-        Log.d(TAG, "Processing swipe gesture: $gesture")
-        // Future: Could trigger navigation, page changes, etc.
+    private fun handleScrollGesture(gesture: String) {
+        Log.d(TAG, "Processing scroll gesture: $gesture")
+        // Future: Could trigger additional scroll-related UI updates
     }
     
-    private fun handlePinchGesture(gesture: String) {
-        Log.d(TAG, "Processing pinch gesture: $gesture")
-        // Future: Could trigger zoom in/out, scaling, etc.
+    private fun handleZoomGesture(gesture: String) {
+        Log.d(TAG, "Processing zoom gesture: $gesture")
+        // Future: Could trigger zoom level indicators, UI updates, etc.
     }
     
     private fun handleTapGesture(gesture: String) {
@@ -47,6 +58,6 @@ class GestureHandler {
      * Get gesture statistics or state information
      */
     fun getGestureStats(): String {
-        return "GestureHandler active and ready"
+        return "GestureHandler active with coordinated detection and management"
     }
 }

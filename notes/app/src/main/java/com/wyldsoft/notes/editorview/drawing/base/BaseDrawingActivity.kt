@@ -1,5 +1,6 @@
 package com.wyldsoft.notes.editorview.drawing.base
 
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -19,6 +20,8 @@ import androidx.core.graphics.createBitmap
 import com.wyldsoft.notes.base.BaseDeviceReceiver
 import com.wyldsoft.notes.editorview.editor.EditorState
 import com.wyldsoft.notes.editorview.editor.EditorView
+import com.wyldsoft.notes.editorview.gestures.GestureDetector
+import com.wyldsoft.notes.editorview.viewport.ViewportController
 import com.wyldsoft.notes.pen.PenProfile
 import com.wyldsoft.notes.pen.PenType
 import com.wyldsoft.notes.ui.theme.MinimaleditorTheme
@@ -37,6 +40,10 @@ abstract class BaseDrawingActivity : ComponentActivity() {
     open var surfaceView: SurfaceView? = null
     protected var isDrawingInProgress = false
     var currentPenProfile = PenProfile.getDefaultProfile(PenType.BALLPEN)
+    
+    // Gesture detection
+    protected var gestureDetector: GestureDetector? = null
+    protected var gestureHandler: com.wyldsoft.notes.editorview.gestures.GestureHandler? = null
 
     // Abstract methods that must be implemented by SDK-specific classes
     abstract fun initializeSDK()
@@ -111,6 +118,9 @@ abstract class BaseDrawingActivity : ComponentActivity() {
 
     protected open fun initializeTouchHelper(surfaceView: SurfaceView) {
         val touchHelper = createTouchHelper(surfaceView)
+        
+        // Initialize gesture detection
+        initializeGestureDetection(surfaceView)
 
         surfaceView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             updateActiveSurface()
@@ -132,6 +142,45 @@ abstract class BaseDrawingActivity : ComponentActivity() {
             }
         }
         surfaceView.holder.addCallback(surfaceCallback)
+    }
+    
+    /**
+     * Initialize gesture detection system
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    protected open fun initializeGestureDetection(surfaceView: SurfaceView) {
+        gestureHandler = com.wyldsoft.notes.editorview.gestures.GestureHandler()
+
+        gestureDetector = GestureDetector(this) { gesture: String ->
+            Log.d(TAG, gesture)
+            Log.d(TAG, "Gesture detected: $gesture")
+            gestureHandler?.handleGesture(gesture)
+        }
+
+        Log.d(TAG, "Gesture detection initialized for surface view: ${surfaceView.id}")
+
+        // Set up touch event handling for gestures
+        surfaceView.setOnTouchListener { _, event ->
+            val gestureConsumed = gestureDetector?.onTouchEvent(event) ?: false
+            Log.d(TAG, "Gesture consumed: $gestureConsumed, action=${event.actionMasked}, pointerCount=${event.pointerCount}")
+
+            // If a gesture was detected, don't pass the event to drawing
+            if (gestureConsumed) {
+                true
+            } else {
+                // Let the original touch handling proceed
+                false
+            }
+        }
+    }
+    
+    /**
+     * Set the viewport controller for gesture-based navigation
+     * This should be called after the ViewportController is available
+     */
+    protected open fun setGestureViewportController(viewportController: ViewportController?) {
+        gestureDetector?.setViewportController(viewportController)
+        Log.d(TAG, "Gesture viewport controller set: ${viewportController != null}")
     }
 
     /**

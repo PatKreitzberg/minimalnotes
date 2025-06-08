@@ -308,6 +308,9 @@ open class OnyxDrawingActivity : BaseDrawingActivity() {
         }
         
         currentViewportController = controller
+        
+        // Set up gesture-based viewport control
+        setGestureViewportController(controller)
     }
 
     fun clearDrawing() {

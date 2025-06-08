@@ -67,6 +67,31 @@ class ViewportController(
     }
 
     /**
+     * Zoom operations centered on a specific focus point
+     */
+    fun zoomInAtFocus(focusX: Float, focusY: Float): Boolean {
+        val currentZoom = viewportManager.getZoomLevel()
+        val newZoom = kotlin.math.min(currentZoom + ViewportManager.ZOOM_STEP, ViewportManager.MAX_ZOOM)
+        val changed = viewportManager.setZoomLevelAtFocus(newZoom, focusX, focusY)
+        if (changed) {
+            Log.d(TAG, "Zoomed in to ${viewportManager.getZoomLevel() * 100}% at focus ($focusX, $focusY)")
+            notifyViewportChanged()
+        }
+        return changed
+    }
+
+    fun zoomOutAtFocus(focusX: Float, focusY: Float): Boolean {
+        val currentZoom = viewportManager.getZoomLevel()
+        val newZoom = kotlin.math.max(currentZoom - ViewportManager.ZOOM_STEP, ViewportManager.MIN_ZOOM)
+        val changed = viewportManager.setZoomLevelAtFocus(newZoom, focusX, focusY)
+        if (changed) {
+            Log.d(TAG, "Zoomed out to ${viewportManager.getZoomLevel() * 100}% at focus ($focusX, $focusY)")
+            notifyViewportChanged()
+        }
+        return changed
+    }
+
+    /**
      * Scroll operations
      */
     fun scrollUp(): Boolean {

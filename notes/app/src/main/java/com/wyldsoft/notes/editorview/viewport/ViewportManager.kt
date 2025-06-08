@@ -95,6 +95,28 @@ class ViewportManager(
     }
 
     /**
+     * Set specific zoom level, centered on a specific focus point
+     */
+    fun setZoomLevelAtFocus(newZoom: Float, focusX: Float, focusY: Float): Boolean {
+        if (newZoom == zoomLevel) return false
+        
+        // Convert focus point to canvas coordinates before zoom
+        val canvasFocusX = (focusX - offsetX) / zoomLevel
+        val canvasFocusY = (focusY - offsetY) / zoomLevel
+
+        // Update zoom level
+        zoomLevel = newZoom
+
+        // Recalculate offset to keep focus point at the same screen position
+        offsetX = focusX - canvasFocusX * zoomLevel
+        offsetY = focusY - canvasFocusY * zoomLevel
+
+        constrainOffset()
+        updateTransformMatrix()
+        return true
+    }
+
+    /**
      * Scroll in specified direction
      */
     fun scrollUp(): Boolean {

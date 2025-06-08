@@ -43,7 +43,6 @@ abstract class BaseDrawingActivity : ComponentActivity() {
     
     // Gesture detection
     protected var gestureDetector: GestureDetector? = null
-    protected var gestureHandler: com.wyldsoft.notes.editorview.gestures.GestureHandler? = null
 
     // Abstract methods that must be implemented by SDK-specific classes
     abstract fun initializeSDK()
@@ -149,12 +148,10 @@ abstract class BaseDrawingActivity : ComponentActivity() {
      */
     @SuppressLint("ClickableViewAccessibility")
     protected open fun initializeGestureDetection(surfaceView: SurfaceView) {
-        gestureHandler = com.wyldsoft.notes.editorview.gestures.GestureHandler()
 
         gestureDetector = GestureDetector(this) { gesture: String ->
             Log.d(TAG, gesture)
             Log.d(TAG, "Gesture detected: $gesture")
-            gestureHandler?.handleGesture(gesture)
         }
 
         Log.d(TAG, "Gesture detection initialized for surface view: ${surfaceView.id}")

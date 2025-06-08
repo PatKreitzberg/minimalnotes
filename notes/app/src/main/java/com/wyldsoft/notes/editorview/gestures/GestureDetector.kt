@@ -46,15 +46,14 @@ class GestureDetector(
     /**
      * Check if the event is from a stylus rather than a finger.
      */
-    private fun isStylusEvent(event: MotionEvent): Boolean {
+    private fun isStylusOrEraserEvent(event: MotionEvent): Boolean {
         for (i in 0 until event.pointerCount) {
-            if (event.getToolType(i) == MotionEvent.TOOL_TYPE_STYLUS) {
+            if (event.getToolType(i) == MotionEvent.TOOL_TYPE_STYLUS || event.getToolType(i) == MotionEvent.TOOL_TYPE_ERASER) {
                 return true
             }
         }
         return false
     }
-
 
     private fun xyDistance(x: Float, y: Float): Float {
         return sqrt((x * x) + (y * y))
@@ -66,7 +65,7 @@ class GestureDetector(
      */
     fun onTouchEvent(event: MotionEvent): Boolean {
         // Check if this is a stylus input - if so, ignore for gesture detection
-        if (isStylusEvent(event)) {
+        if (isStylusOrEraserEvent(event)) {
             return false
         }
 

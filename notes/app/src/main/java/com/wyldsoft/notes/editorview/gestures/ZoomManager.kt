@@ -124,19 +124,19 @@ class ZoomManager(
     }
     
     /**
-     * Apply zooming through discrete viewport controller operations
+     * Apply zooming through discrete viewport controller operations centered on focus point
      */
     private fun applyZoom(scaleFactor: Float, focusX: Float, focusY: Float) {
         val controller = viewportController ?: return
         
-        // Apply zoom based on scale factor
+        // Apply zoom based on scale factor, centered on the focus point
         if (scaleFactor > 1.05f && controller.canZoomIn()) {
-            controller.zoomIn()
+            controller.zoomInAtFocus(focusX, focusY)
             
             val gesture = "Zooming in: scale factor ${String.format("%.2f", scaleFactor)} (center: ${focusX.toInt()}, ${focusY.toInt()})"
             onZoomEvent(gesture)
         } else if (scaleFactor < 0.95f && controller.canZoomOut()) {
-            controller.zoomOut()
+            controller.zoomOutAtFocus(focusX, focusY)
             
             val gesture = "Zooming out: scale factor ${String.format("%.2f", scaleFactor)} (center: ${focusX.toInt()}, ${focusY.toInt()})"
             onZoomEvent(gesture)

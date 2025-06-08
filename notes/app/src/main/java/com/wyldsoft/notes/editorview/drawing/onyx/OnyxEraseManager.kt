@@ -6,8 +6,8 @@ import com.onyx.android.sdk.api.device.epd.EpdController
 import com.onyx.android.sdk.data.note.TouchPoint
 import com.onyx.android.sdk.pen.data.TouchPointList
 import com.wyldsoft.notes.editorview.editor.EditorState
-import com.wyldsoft.notes.utils.EraserUtils
-import com.wyldsoft.notes.utils.PartialRefreshEraserManager
+import com.wyldsoft.notes.utils.RefreshUtils
+import com.wyldsoft.notes.utils.PartialRefreshManager
 import com.wyldsoft.notes.render.RendererHelper
 import com.onyx.android.sdk.rx.RxManager
 
@@ -28,14 +28,14 @@ class OnyxEraserManager(
     // Erasing state
     private var eraserModeEnabled = false
     private var isErasingInProgress = false
-    private var currentErasingSession = EraserUtils.ErasingSession()
+    private var currentErasingSession = RefreshUtils.RefreshSession()
     private var eraserPath = mutableListOf<TouchPoint>()
     
     // Viewport controller for coordinate transforms
     private var viewportController: com.wyldsoft.notes.editorview.viewport.ViewportController? = null
 
     // Partial refresh manager for optimized erasing
-    private lateinit var partialRefreshManager: PartialRefreshEraserManager
+    private lateinit var partialRefreshManager: PartialRefreshManager
 
     /**
      * Set eraser mode enabled/disabled
@@ -63,7 +63,7 @@ class OnyxEraserManager(
         viewportController = controller
         
         // Initialize partial refresh manager with viewport controller
-        partialRefreshManager = PartialRefreshEraserManager(
+        partialRefreshManager = PartialRefreshManager(
             getRxManager(), 
             getRendererHelper(), 
             viewportController
@@ -112,8 +112,7 @@ class OnyxEraserManager(
         }
 
         // Update database with remaining shapes if any shapes were erased
-        if (currentErasingSession.hasErasedShapes()) {
-            Log.d(TAG, "Erasing session completed - ${currentErasingSession.erasedShapes.size} shapes erased")
+        if (currentErasingSession.hasAffectedShapes()) {
             Log.d(TAG, "Total shapes remaining in shape manager: ${shapeManager.getAllShapes().size}")
             
             // Update database with remaining shapes
@@ -126,7 +125,7 @@ class OnyxEraserManager(
         EpdController.enablePost(surfaceView, 1)
 
         // Perform optimized refresh only if shapes were erased
-        if (currentErasingSession.hasErasedShapes()) {
+        if (currentErasingSession.hasAffectedShapes()) {
             performOptimizedRefresh(surfaceView)
         }
 
@@ -167,7 +166,7 @@ class OnyxEraserManager(
 
             // Find shapes to erase using the complete adjusted path
             val availableShapes = shapeManager.getShapesSnapshot()
-            val shapesToErase = EraserUtils.findShapesToErase(adjustedEraserPath, availableShapes)
+            val shapesToErase = RefreshUtils.findShapesInPath(adjustedEraserPath, availableShapes)
 
             if (shapesToErase.isNotEmpty()) {
                 eraseShapesCompletely(shapesToErase)
@@ -182,7 +181,7 @@ class OnyxEraserManager(
      * Get the current erasing session for database operations
      * @return Current erasing session
      */
-    fun getCurrentErasingSession(): EraserUtils.ErasingSession = currentErasingSession
+    fun getCurrentErasingSession(): RefreshUtils.RefreshSession = currentErasingSession
 
     /**
      * Erase shapes completely at the end of erasing session
@@ -197,7 +196,7 @@ class OnyxEraserManager(
 
         // Add to erasing session
         shapesToErase.forEach { shape ->
-            currentErasingSession.addErasedShape(shape)
+            currentErasingSession.addAffectedShape(shape)
         }
 
         // Note: Database update and refresh will happen in endErasing()
@@ -223,15 +222,15 @@ class OnyxEraserManager(
     private fun performOptimizedRefresh(surfaceView: android.view.SurfaceView?) {
         // Initialize partial refresh manager if not already done
         if (!::partialRefreshManager.isInitialized) {
-            partialRefreshManager = PartialRefreshEraserManager(
+            partialRefreshManager = PartialRefreshManager(
                 getRxManager(), 
                 getRendererHelper(), 
                 viewportController
             )
         }
         
-        val refreshBounds = partialRefreshManager.calculateCombinedRefreshBounds(
-            currentErasingSession.erasedShapes,
+        val refreshBounds = partialRefreshManager.calculateRefreshBounds(
+            currentErasingSession.affectedShapes,
             eraserPath,
             20f // Default eraser radius
         )
@@ -273,9 +272,9 @@ class OnyxEraserManager(
         return mapOf(
             "eraserModeEnabled" to eraserModeEnabled,
             "isErasingInProgress" to isErasingInProgress,
-            "erasedShapesCount" to currentErasingSession.erasedShapes.size,
+            "erasedShapesCount" to currentErasingSession.affectedShapes.size,
             "eraserPathPoints" to eraserPath.size,
-            "hasErasedShapes" to currentErasingSession.hasErasedShapes()
+            "hasErasedShapes" to currentErasingSession.hasAffectedShapes()
         )
     }
 

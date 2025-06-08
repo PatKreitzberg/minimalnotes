@@ -12,19 +12,20 @@ import com.wyldsoft.notes.render.RendererHelper
 import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
 import com.wyldsoft.notes.backend.database.ShapeUtils
 import com.onyx.android.sdk.rx.RxManager
+import com.onyx.android.sdk.data.note.TouchPoint
 
 /**
- * Manager class for handling partial refresh during erasing operations
- * Optimizes screen updates by only refreshing areas affected by erasing
+ * Manager class for handling partial refresh during various operations
+ * Optimizes screen updates by only refreshing areas affected by drawing, erasing, moving, etc.
  */
-class PartialRefreshEraserManager(
+class PartialRefreshManager(
     private val rxManager: RxManager,
     private val rendererHelper: RendererHelper,
     private val viewportController: com.wyldsoft.notes.editorview.viewport.ViewportController? = null
 ) {
 
     companion object {
-        private const val TAG = "PartialRefreshEraserManager"
+        private const val TAG = "PartialRefreshManager"
         private const val MIN_REFRESH_AREA = 100f // Minimum area to warrant partial refresh
     }
 
@@ -45,7 +46,7 @@ class PartialRefreshEraserManager(
 
         try {
             // Validate refresh bounds
-            val validatedBounds = EraserUtils.validateRefreshBounds(
+            val validatedBounds = RefreshUtils.validateRefreshBounds(
                 refreshBounds,
                 surfaceView.width,
                 surfaceView.height
@@ -206,42 +207,103 @@ class PartialRefreshEraserManager(
     }
 
     /**
-     * Calculate refresh bounds from multiple sources (erased shapes + eraser path)
+     * Calculate refresh bounds from shapes only
+     * @param shapes Collection of shapes that were affected
+     * @param toolRadius Radius to add as padding around shapes
+     * @return Combined bounds of all shapes with padding
      */
-    fun calculateCombinedRefreshBounds(
-        erasedShapes: Set<DrawingShape>,
-        eraserPath: List<com.onyx.android.sdk.data.note.TouchPoint>?,
-        eraserRadius: Float = 20f
+    fun calculateRefreshBounds(
+        shapes: Collection<DrawingShape>,
+        toolRadius: Float = 20f
     ): RectF {
-        val combinedBounds = RectF()
-
-        // Add bounds from erased shapes
-        if (erasedShapes.isNotEmpty()) {
-            val shapesBounds = EraserUtils.calculateShapesBounds(erasedShapes)
-            if (!shapesBounds.isEmpty) {
-                combinedBounds.set(shapesBounds)
-            }
+        val bounds = RefreshUtils.calculateShapesBounds(shapes)
+        
+        // Add padding for tool radius
+        if (!bounds.isEmpty) {
+            bounds.inset(-toolRadius, -toolRadius)
         }
+        
+        return bounds
+    }
 
-        // Add bounds from eraser path
-        eraserPath?.let { points ->
-            if (points.isNotEmpty()) {
-                val pathBounds = EraserUtils.calculateTouchPointsBounds(points, eraserRadius)
-                if (!pathBounds.isEmpty) {
-                    if (combinedBounds.isEmpty) {
-                        combinedBounds.set(pathBounds)
-                    } else {
-                        combinedBounds.union(pathBounds)
-                    }
+    /**
+     * Calculate refresh bounds from both shapes and touch points
+     * @param shapes Collection of shapes that were affected (can be null/empty)
+     * @param touchPoints List of touch points from tool movement (can be null/empty)
+     * @param toolRadius Radius of the tool for padding
+     * @return Combined bounds from both sources with padding
+     */
+    fun calculateRefreshBounds(
+        shapes: Collection<DrawingShape>?,
+        touchPoints: List<TouchPoint>?,
+        toolRadius: Float = 20f
+    ): RectF {
+        val boundsToUnion = mutableListOf<RectF>()
+        
+        // Add bounds from shapes if provided
+        shapes?.let { shapeCollection ->
+            if (shapeCollection.isNotEmpty()) {
+                val shapesBounds = RefreshUtils.calculateShapesBounds(shapeCollection)
+                if (!shapesBounds.isEmpty) {
+                    boundsToUnion.add(shapesBounds)
                 }
             }
         }
-
-        // Add padding for eraser radius
-        if (!combinedBounds.isEmpty) {
-            combinedBounds.inset(-eraserRadius, -eraserRadius)
+        
+        // Add bounds from touch points if provided
+        touchPoints?.let { points ->
+            if (points.isNotEmpty()) {
+                val pathBounds = RefreshUtils.calculateTouchPointsBounds(points, toolRadius)
+                if (!pathBounds.isEmpty) {
+                    boundsToUnion.add(pathBounds)
+                }
+            }
         }
-
+        
+        // Combine all bounds
+        val combinedBounds = RefreshUtils.calculateCombinedBounds(boundsToUnion)
+        
+        // Add padding for tool radius if we have any bounds
+        if (!combinedBounds.isEmpty) {
+            combinedBounds.inset(-toolRadius, -toolRadius)
+        }
+        
         return combinedBounds
+    }
+
+    /**
+     * Calculate refresh bounds from a list of RectF bounds
+     * @param boundsList List of bounds to combine
+     * @param toolRadius Additional padding to add
+     * @return Combined bounds with padding
+     */
+    fun calculateRefreshBounds(
+        boundsList: List<RectF>,
+        toolRadius: Float = 20f
+    ): RectF {
+        val combinedBounds = RefreshUtils.calculateCombinedBounds(boundsList)
+        
+        // Add padding for tool radius if we have any bounds
+        if (!combinedBounds.isEmpty) {
+            combinedBounds.inset(-toolRadius, -toolRadius)
+        }
+        
+        return combinedBounds
+    }
+
+    /**
+     * Legacy method for backward compatibility with erasing operations
+     * @param erasedShapes Set of shapes that were erased
+     * @param eraserPath List of touch points from eraser movement
+     * @param eraserRadius Radius of the eraser tool
+     * @return Combined bounds suitable for partial refresh
+     */
+    @Deprecated("Use calculateRefreshBounds with Collection and List parameters instead")
+    fun calculateCombinedRefreshBounds(
+        erasedShapes: Set<DrawingShape>,
+        eraserPath: List<TouchPoint>?,
+        eraserRadius: Float = 20f
+    ): RectF {
+        return calculateRefreshBounds(erasedShapes, eraserPath, eraserRadius)
     }
 }

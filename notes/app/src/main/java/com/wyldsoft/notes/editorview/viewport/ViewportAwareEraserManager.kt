@@ -5,7 +5,7 @@ import android.util.Log
 import com.onyx.android.sdk.data.note.TouchPoint
 import com.onyx.android.sdk.pen.data.TouchPointList
 import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
-import com.wyldsoft.notes.utils.EraserUtils
+import com.wyldsoft.notes.utils.RefreshUtils
 
 /**
  * Viewport-aware eraser manager that only checks visible shapes for erasing
@@ -37,8 +37,8 @@ class ViewportAwareEraserManager(
         
         Log.d(TAG, "Checking ${visibleShapes.size} visible shapes out of ${allShapes.size} total shapes")
         
-        // Use existing EraserUtils logic on visible shapes only
-        return EraserUtils.findShapesToEraseAtPoint(point, visibleShapes, eraserRadius)
+        // Use existing RefreshUtils logic on visible shapes only
+        return RefreshUtils.findShapesAtPoint(point, visibleShapes, eraserRadius)
     }
 
     /**
@@ -60,8 +60,8 @@ class ViewportAwareEraserManager(
         
         Log.d(TAG, "Checking ${visibleShapes.size} visible shapes out of ${allShapes.size} total shapes for path erasing")
         
-        // Use existing EraserUtils logic on visible shapes only
-        return EraserUtils.findShapesToErase(eraserPath, visibleShapes, eraserRadius)
+        // Use existing RefreshUtils logic on visible shapes only
+        return RefreshUtils.findShapesInPath(eraserPath, visibleShapes, eraserRadius)
     }
 
     /**

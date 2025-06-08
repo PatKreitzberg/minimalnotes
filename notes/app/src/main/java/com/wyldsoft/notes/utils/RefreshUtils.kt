@@ -6,27 +6,28 @@ import com.onyx.android.sdk.pen.data.TouchPointList
 import com.wyldsoft.notes.editorview.drawing.shape.DrawingShape
 
 /**
- * Utility class for eraser functionality including partial refresh optimization
- * Handles detection of shapes to erase and calculation of affected screen areas
+ * Utility class for refresh functionality including partial refresh optimization
+ * Handles calculation of affected screen areas and bounds management for various operations
  */
-object EraserUtils {
-    private const val TAG = "EraserUtils"
+object RefreshUtils {
+    private const val TAG = "RefreshUtils"
 
-    // Default eraser radius in pixels
-    private const val DEFAULT_ERASER_RADIUS = 20f
+    // Default tool radius in pixels for bounds calculations
+    private const val DEFAULT_TOOL_RADIUS = 20f
 
     /**
-     * Data class to hold erasing session information including affected screen area
+     * Data class to hold refresh session information including affected screen area
+     * Can be used for erasing, drawing, or any operation that affects screen regions
      */
-    data class ErasingSession(
-        val erasedShapes: MutableSet<DrawingShape> = mutableSetOf(),
+    data class RefreshSession(
+        val affectedShapes: MutableSet<DrawingShape> = mutableSetOf(),
         val affectedBounds: RectF = RectF()
     ) {
         /**
-         * Add a shape to the erasing session and update affected bounds
+         * Add a shape to the refresh session and update affected bounds
          */
-        fun addErasedShape(shape: DrawingShape) {
-            erasedShapes.add(shape)
+        fun addAffectedShape(shape: DrawingShape) {
+            affectedShapes.add(shape)
 
             // Update bounding rectangle of the shape if it exists
             shape.updateShapeRect()
@@ -40,60 +41,60 @@ object EraserUtils {
         }
 
         /**
-         * Get the affected bounds with additional padding for eraser width
+         * Get the affected bounds with additional padding for tool width
          */
-        fun getRefreshBounds(eraserRadius: Float = DEFAULT_ERASER_RADIUS): RectF {
+        fun getRefreshBounds(toolRadius: Float = DEFAULT_TOOL_RADIUS): RectF {
             val paddedBounds = RectF(affectedBounds)
-            paddedBounds.inset(-eraserRadius * 2, -eraserRadius * 2)
+            paddedBounds.inset(-toolRadius * 2, -toolRadius * 2)
             return paddedBounds
         }
 
         /**
-         * Check if this session has any erased shapes
+         * Check if this session has any affected shapes
          */
-        fun hasErasedShapes(): Boolean = erasedShapes.isNotEmpty()
+        fun hasAffectedShapes(): Boolean = affectedShapes.isNotEmpty()
 
         /**
          * Clear the session data
          */
         fun clear() {
-            erasedShapes.clear()
+            affectedShapes.clear()
             affectedBounds.setEmpty()
         }
     }
 
     /**
-     * Find shapes that should be erased by a single touch point
-     * @param point The eraser touch point
-     * @param availableShapes List of shapes that can be erased
-     * @param eraserRadius Radius of the eraser tool
-     * @return List of shapes that intersect with the eraser point
+     * Find shapes that intersect with a single touch point
+     * @param point The touch point to test
+     * @param availableShapes List of shapes to test against
+     * @param toolRadius Radius of the tool
+     * @return List of shapes that intersect with the point
      */
-    fun findShapesToEraseAtPoint(
+    fun findShapesAtPoint(
         point: TouchPoint,
         availableShapes: List<DrawingShape>,
-        eraserRadius: Float = DEFAULT_ERASER_RADIUS
+        toolRadius: Float = DEFAULT_TOOL_RADIUS
     ): List<DrawingShape> {
         val pointList = TouchPointList().apply { add(point) }
         return availableShapes.filter { shape ->
-            shape.hitTestPoints(pointList, eraserRadius)
+            shape.hitTestPoints(pointList, toolRadius)
         }
     }
 
     /**
-     * Find shapes that should be erased by an eraser path (multiple touch points)
-     * @param eraserPath TouchPointList representing the eraser movement
-     * @param availableShapes List of shapes that can be erased
-     * @param eraserRadius Radius of the eraser tool
-     * @return List of shapes that intersect with the eraser path
+     * Find shapes that intersect with a path of touch points
+     * @param touchPath TouchPointList representing the tool movement
+     * @param availableShapes List of shapes to test against
+     * @param toolRadius Radius of the tool
+     * @return List of shapes that intersect with the path
      */
-    fun findShapesToErase(
-        eraserPath: TouchPointList,
+    fun findShapesInPath(
+        touchPath: TouchPointList,
         availableShapes: List<DrawingShape>,
-        eraserRadius: Float = DEFAULT_ERASER_RADIUS
+        toolRadius: Float = DEFAULT_TOOL_RADIUS
     ): List<DrawingShape> {
         return availableShapes.filter { shape ->
-            shape.hitTestPoints(eraserPath, eraserRadius)
+            shape.hitTestPoints(touchPath, toolRadius)
         }
     }
 
@@ -120,29 +121,50 @@ object EraserUtils {
     }
 
     /**
-     * Calculate the bounding rectangle for touch points with eraser radius
-     * @param touchPoints List of touch points from eraser movement
-     * @param eraserRadius Radius of the eraser tool
+     * Calculate the bounding rectangle for touch points with tool radius
+     * @param touchPoints List of touch points from tool movement
+     * @param toolRadius Radius of the tool
      * @return RectF containing all touch points with padding
      */
     fun calculateTouchPointsBounds(
         touchPoints: List<TouchPoint>,
-        eraserRadius: Float = DEFAULT_ERASER_RADIUS
+        toolRadius: Float = DEFAULT_TOOL_RADIUS
     ): RectF {
         if (touchPoints.isEmpty()) return RectF()
 
         val bounds = RectF()
         touchPoints.forEach { point ->
             if (bounds.isEmpty) {
-                bounds.set(point.x - eraserRadius, point.y - eraserRadius,
-                    point.x + eraserRadius, point.y + eraserRadius)
+                bounds.set(point.x - toolRadius, point.y - toolRadius,
+                    point.x + toolRadius, point.y + toolRadius)
             } else {
-                bounds.union(point.x - eraserRadius, point.y - eraserRadius,
-                    point.x + eraserRadius, point.y + eraserRadius)
+                bounds.union(point.x - toolRadius, point.y - toolRadius,
+                    point.x + toolRadius, point.y + toolRadius)
             }
         }
 
         return bounds
+    }
+
+    /**
+     * Calculate combined bounds from multiple sources
+     * @param boundsSet List of RectF bounds to combine
+     * @return Combined RectF containing all input bounds
+     */
+    fun calculateCombinedBounds(boundsSet: List<RectF>): RectF {
+        val combinedBounds = RectF()
+        
+        boundsSet.forEach { bounds ->
+            if (!bounds.isEmpty) {
+                if (combinedBounds.isEmpty) {
+                    combinedBounds.set(bounds)
+                } else {
+                    combinedBounds.union(bounds)
+                }
+            }
+        }
+        
+        return combinedBounds
     }
 
     /**
